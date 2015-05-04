@@ -46,6 +46,7 @@ SET(XIL_TOOLS_DIR ${TOOLS_DIR}/xilinx-zynqarm)
 # Add libraries
 
 OPTION(CFG_COMPILE_LIB_MNAPP_DUALPROCSHM "Compile openPOWERLINK MN library for application using dual processor shared memory" OFF)
+OPTION(CFG_COMPILE_LIB_CNAPP_DUALPROCSHM "Compile openPOWERLINK CN library for application using dual processor shared memory" OFF)
 
 # MN libraries
 IF(CFG_COMPILE_LIB_MNAPP_DUALPROCSHM)
@@ -56,4 +57,15 @@ IF(CFG_COMPILE_LIB_MNAPP_DUALPROCSHM)
     ADD_SUBDIRECTORY(proj/generic/liboplkmnapp-dualprocshm)
 ELSE()
     UNSET(CFG_COMPILE_LIB_MN_HW_LIB_DIR CACHE)
+ENDIF()
+
+# CN libraries
+IF(CFG_COMPILE_LIB_CNAPP_DUALPROCSHM)
+      # Path to the hardware library folder of your board example
+      SET(CFG_COMPILE_LIB_CN_HW_LIB_DIR ${XIL_HW_LIB_DIR}/xilinx-z702/cn-dual-shmem-gpio
+                CACHE PATH "Path to the hardware library folder for the dual processor CN library")
+
+    ADD_SUBDIRECTORY(proj/generic/liboplkcnapp-dualprocshm)
+ELSE()
+    UNSET(CFG_COMPILE_LIB_CN_HW_LIB_DIR CACHE)
 ENDIF()
