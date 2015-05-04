@@ -10,6 +10,6 @@ the_ROM_image:
 
         [bootloader]        fsbl.elf
                             download.bit
-                            demo_mn_embedded.elf
+                            demo_cn_embedded.elf
         [load = 0x30000000] oplkdrv_daemon.bin
 }

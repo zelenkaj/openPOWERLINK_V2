@@ -63,7 +63,7 @@ clean-bin:
 .PHONY: copy-files
 copy-files:
 	@echo Copying files
-	cp ../../../microblaze/xilinx-z702/mn-dual-shmem-gpio/$(OPLKDRV_DAEMON).elf .
+	cp ../../../microblaze/xilinx-z702/cn-dual-shmem-gpio/$(OPLKDRV_DAEMON).elf .
 .PHONY: build-bin
 build-bin:
 	$(DATA2MEM) -bm system_bd.bmm -bt system.bit -bd $(OPLKDRV_DAEMON).elf tag pcp -o b download.bit
