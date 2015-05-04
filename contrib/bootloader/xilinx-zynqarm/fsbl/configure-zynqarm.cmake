@@ -49,14 +49,13 @@ SET(CMAKE_INSTALL_PREFIX
 
 ################################################################################
 # U S E R   O P T I O N S
+SET(CFG_HW_LIB xilinx-z702/mn-dual-shmem-gpio CACHE STRING
+    "Subfolder of hardware board demo")
 
 # Path to the hardware library folder of your board example
-SET(CFG_HW_LIB_DIR ${XIL_HW_LIB_DIR}/xilinx-z702/mn-dual-shmem-gpio
-    CACHE PATH "Path to the hardware library folder for the board example you want to use")
+SET(CFG_HW_LIB_DIR ${XIL_HW_LIB_DIR}/${CFG_HW_LIB})
 
-SET(CFG_BIN_DIR "xilinx-z702/mn-dual-shmem-gpio"
-    CACHE PATH "Path to the target binary folder of your example design")
-
+SET(CFG_BIN_DIR ${CFG_HW_LIB})
 SET(ARCH_INSTALL_POSTFIX ${CFG_BIN_DIR})
 # Include board specific settings file
 SET_BOARD_CONFIGURATION(${CFG_HW_LIB_DIR})
