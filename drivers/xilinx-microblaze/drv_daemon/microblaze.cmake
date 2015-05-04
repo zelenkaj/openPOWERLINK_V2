@@ -45,7 +45,7 @@ SET(XIL_HW_LIB_DIR ${OPLK_ROOT_DIR}/hardware/lib/${SYSTEM_NAME_DIR}/${SYSTEM_PRO
 LIST_SUBDIRECTORIES(HW_BOARD_DEMOS ${XIL_HW_LIB_DIR} 2)
 
 IF (CFG_KERNEL_DUALPROCSHM)
-    SET(CFG_HW_LIB xilinx-z702/mn-dual-shmem-gpio CACHE STRING
+    SET(CFG_HW_LIB xilinx-z702/cn-dual-shmem-gpio CACHE STRING
     "Subfolder of hardware board demo")
 ELSEIF (CFG_KERNEL_STACK_PCP_HOSTIF_MODULE)
     SET(CFG_HW_LIB avnet-s6plkeb/mn-single-hostif-drv CACHE STRING
