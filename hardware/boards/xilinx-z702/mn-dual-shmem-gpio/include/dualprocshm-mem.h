@@ -54,7 +54,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #if defined(__arm__)
     // TODO : gks check if this can be retrieved from hardware configuration
-    #define COMMON_MEM_BASE             0x2C000000
+    #define COMMON_MEM_BASE             0x40000000
 
     #if defined(XPAR_PS7_DDR_0_S_AXI_HP0_BASEADDR) && defined (XPAR_PS7_DDR_0_S_AXI_HP0_HIGHADDR)
         #define SHARED_MEM_BASE         (XPAR_PS7_DDR_0_S_AXI_HP0_BASEADDR + 0x20000000)
@@ -65,11 +65,15 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     #endif
 #elif defined(__MICROBLAZE__)
     // TODO : gks check if this can be retrieved from hardware configuration
-    #define COMMON_MEM_BASE             0x2C000000
+    #define COMMON_MEM_BASE             0x40000000
 
     #if defined(XPAR_PS7_DDR_0_S_AXI_HP0_BASEADDR) && defined (XPAR_PS7_DDR_0_S_AXI_HP0_HIGHADDR)
         #define SHARED_MEM_BASE         (XPAR_PS7_DDR_0_S_AXI_HP0_BASEADDR + 0x20000000)
         #define SHARED_MEM_SPAN         (XPAR_PS7_DDR_0_S_AXI_HP0_HIGHADDR \
+                                        - SHARED_MEM_BASE)
+    #elif defined(XPAR_PCP_SHM_BRAM_CTRL_BASEADDR) && defined(XPAR_PCP_SHM_BRAM_CTRL_HIGHADDR)
+        #define SHARED_MEM_BASE         XPAR_PCP_SHM_BRAM_CTRL_BASEADDR
+        #define SHARED_MEM_SPAN         (XPAR_PCP_SHM_BRAM_CTRL_HIGHADDR \
                                         - SHARED_MEM_BASE)
     #else
         #error "Shared memory base address(SHARED_MEM_BASE) could not be set!"

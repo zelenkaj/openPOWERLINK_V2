@@ -25,8 +25,12 @@ UcfFile: data/system.ucf
 EnableParTimingError: 1
 ShowLicenseDialog: 1
 BInfo:
-LockAddr: pcp_d_bram_ctrl,C_BASEADDR
-LockAddr: pcp_i_bram_ctrl,C_BASEADDR
+LockAddr: host_shm_bram_ctrl,C_S_AXI_BASEADDR
+LockAddr: pcp_shm_bram_ctrl,C_BASEADDR
+LockAddr: pcp_i_bram_ctrl_1,C_BASEADDR
+LockAddr: pcp_d_bram_ctrl_1,C_BASEADDR
+LockAddr: pcp_i_bram_ctrl_0,C_BASEADDR
+LockAddr: pcp_d_bram_ctrl_0,C_BASEADDR
 Processor: processing_system7_0
 ElfImp:
 ElfSim:

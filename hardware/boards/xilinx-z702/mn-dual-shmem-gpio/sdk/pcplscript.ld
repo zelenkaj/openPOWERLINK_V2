@@ -10,15 +10,15 @@
 /*                                                                 */
 /*******************************************************************/
 
-_STACK_SIZE = DEFINED(_STACK_SIZE) ? _STACK_SIZE : 0xA00000;
-_HEAP_SIZE = DEFINED(_HEAP_SIZE) ? _HEAP_SIZE : 0xA00000;
+_STACK_SIZE = DEFINED(_STACK_SIZE) ? _STACK_SIZE : 0x2800;
+_HEAP_SIZE = DEFINED(_HEAP_SIZE) ? _HEAP_SIZE : 0x1C800;
 
 /* Define Memories in the system */
 
 MEMORY
 {
-   pcp_i_bram_ctrl_pcp_d_bram_ctrl : ORIGIN = 0x40000050, LENGTH = 0x7FB0
-   ps7_ddr_0_S_AXI_HP0_BASEADDR : ORIGIN = 0x30000000, LENGTH = 0x10000000
+   pcp_i_bram_ctrl_pcp_d_bram_ctrl : ORIGIN = 0x00000050, LENGTH = 0x3FFB0
+   pcp_shm_bram_ctrl : ORIGIN = 0x40001000, LENGTH = 0x1F000
 }
 
 /* Specify the default entry point to the program */
@@ -29,19 +29,19 @@ ENTRY(_start)
 
 SECTIONS
 {
-.vectors.reset 0x40000000 : {
+.vectors.reset 0x00000000 : {
    KEEP (*(.vectors.reset))
 }
 
-.vectors.sw_exception 0x40000008 : {
+.vectors.sw_exception 0x00000008 : {
    KEEP (*(.vectors.sw_exception))
 }
 
-.vectors.interrupt 0x40000010 : {
+.vectors.interrupt 0x00000010 : {
    KEEP (*(.vectors.interrupt))
 }
 
-.vectors.hw_exception 0x40000020 : {
+.vectors.hw_exception 0x00000020 : {
    KEEP (*(.vectors.hw_exception))
 }
 
@@ -49,15 +49,15 @@ SECTIONS
    *(.text)
    *(.text.*)
    *(.gnu.linkonce.t.*)
-} > ps7_ddr_0_S_AXI_HP0_BASEADDR
+} > pcp_i_bram_ctrl_pcp_d_bram_ctrl
 
 .init : {
    KEEP (*(.init))
-} > ps7_ddr_0_S_AXI_HP0_BASEADDR
+} > pcp_i_bram_ctrl_pcp_d_bram_ctrl
 
 .fini : {
    KEEP (*(.fini))
-} > ps7_ddr_0_S_AXI_HP0_BASEADDR
+} > pcp_i_bram_ctrl_pcp_d_bram_ctrl
 
 .ctors : {
    __CTOR_LIST__ = .;
@@ -68,7 +68,7 @@ SECTIONS
    KEEP (*(.ctors))
    __CTOR_END__ = .;
    ___CTORS_END___ = .;
-} > ps7_ddr_0_S_AXI_HP0_BASEADDR
+} > pcp_i_bram_ctrl_pcp_d_bram_ctrl
 
 .dtors : {
    __DTOR_LIST__ = .;
@@ -79,7 +79,7 @@ SECTIONS
    KEEP (*(.dtors))
    PROVIDE(__DTOR_END__ = .);
    PROVIDE(___DTORS_END___ = .);
-} > ps7_ddr_0_S_AXI_HP0_BASEADDR
+} > pcp_i_bram_ctrl_pcp_d_bram_ctrl
 
 .rodata : {
    __rodata_start = .;
@@ -87,7 +87,7 @@ SECTIONS
    *(.rodata.*)
    *(.gnu.linkonce.r.*)
    __rodata_end = .;
-} > ps7_ddr_0_S_AXI_HP0_BASEADDR
+} > pcp_i_bram_ctrl_pcp_d_bram_ctrl
 
 .sdata2 : {
    . = ALIGN(8);
@@ -97,7 +97,7 @@ SECTIONS
    *(.gnu.linkonce.s2.*)
    . = ALIGN(8);
    __sdata2_end = .;
-} > ps7_ddr_0_S_AXI_HP0_BASEADDR
+} > pcp_i_bram_ctrl_pcp_d_bram_ctrl
 
 .sbss2 : {
    __sbss2_start = .;
@@ -105,7 +105,7 @@ SECTIONS
    *(.sbss2.*)
    *(.gnu.linkonce.sb2.*)
    __sbss2_end = .;
-} > ps7_ddr_0_S_AXI_HP0_BASEADDR
+} > pcp_i_bram_ctrl_pcp_d_bram_ctrl
 
 .data : {
    . = ALIGN(4);
@@ -114,31 +114,31 @@ SECTIONS
    *(.data.*)
    *(.gnu.linkonce.d.*)
    __data_end = .;
-} > ps7_ddr_0_S_AXI_HP0_BASEADDR
+} > pcp_i_bram_ctrl_pcp_d_bram_ctrl
 
 .got : {
    *(.got)
-} > ps7_ddr_0_S_AXI_HP0_BASEADDR
+} > pcp_i_bram_ctrl_pcp_d_bram_ctrl
 
 .got1 : {
    *(.got1)
-} > ps7_ddr_0_S_AXI_HP0_BASEADDR
+} > pcp_i_bram_ctrl_pcp_d_bram_ctrl
 
 .got2 : {
    *(.got2)
-} > ps7_ddr_0_S_AXI_HP0_BASEADDR
+} > pcp_i_bram_ctrl_pcp_d_bram_ctrl
 
 .eh_frame : {
    *(.eh_frame)
-} > ps7_ddr_0_S_AXI_HP0_BASEADDR
+} > pcp_i_bram_ctrl_pcp_d_bram_ctrl
 
 .jcr : {
    *(.jcr)
-} > ps7_ddr_0_S_AXI_HP0_BASEADDR
+} > pcp_i_bram_ctrl_pcp_d_bram_ctrl
 
 .gcc_except_table : {
    *(.gcc_except_table)
-} > ps7_ddr_0_S_AXI_HP0_BASEADDR
+} > pcp_i_bram_ctrl_pcp_d_bram_ctrl
 
 .sdata : {
    . = ALIGN(8);
@@ -147,7 +147,7 @@ SECTIONS
    *(.sdata.*)
    *(.gnu.linkonce.s.*)
    __sdata_end = .;
-} > ps7_ddr_0_S_AXI_HP0_BASEADDR
+} > pcp_i_bram_ctrl_pcp_d_bram_ctrl
 
 .sbss (NOLOAD) : {
    . = ALIGN(4);
@@ -157,7 +157,7 @@ SECTIONS
    *(.gnu.linkonce.sb.*)
    . = ALIGN(8);
    __sbss_end = .;
-} > ps7_ddr_0_S_AXI_HP0_BASEADDR
+} > pcp_i_bram_ctrl_pcp_d_bram_ctrl
 
 .tdata : {
    __tdata_start = .;
@@ -165,7 +165,7 @@ SECTIONS
    *(.tdata.*)
    *(.gnu.linkonce.td.*)
    __tdata_end = .;
-} > ps7_ddr_0_S_AXI_HP0_BASEADDR
+} > pcp_i_bram_ctrl_pcp_d_bram_ctrl
 
 .tbss : {
    __tbss_start = .;
@@ -173,7 +173,7 @@ SECTIONS
    *(.tbss.*)
    *(.gnu.linkonce.tb.*)
    __tbss_end = .;
-} > ps7_ddr_0_S_AXI_HP0_BASEADDR
+} > pcp_i_bram_ctrl_pcp_d_bram_ctrl
 
 .bss (NOLOAD) : {
    . = ALIGN(4);
@@ -184,12 +184,6 @@ SECTIONS
    *(COMMON)
    . = ALIGN(4);
    __bss_end = .;
-} > ps7_ddr_0_S_AXI_HP0_BASEADDR
-
-.local_memory : {
-   __local_memory_start = .;
-   *(.local_memory)
-   __local_memory_end = .;
 } > pcp_i_bram_ctrl_pcp_d_bram_ctrl
 
 _SDA_BASE_ = __sdata_start + ((__sbss_end - __sdata_start) / 2 );
@@ -204,7 +198,7 @@ _SDA2_BASE_ = __sdata2_start + ((__sbss2_end - __sdata2_start) / 2 );
    _heap_start = .;
    . += _HEAP_SIZE;
    _heap_end = .;
-} > ps7_ddr_0_S_AXI_HP0_BASEADDR
+} > pcp_shm_bram_ctrl
 
 .stack (NOLOAD) : {
    _stack_end = .;
@@ -212,7 +206,7 @@ _SDA2_BASE_ = __sdata2_start + ((__sbss2_end - __sdata2_start) / 2 );
    . = ALIGN(8);
    _stack = .;
    __stack = _stack;
-} > ps7_ddr_0_S_AXI_HP0_BASEADDR
+} > pcp_shm_bram_ctrl
 
 _end = .;
 }
