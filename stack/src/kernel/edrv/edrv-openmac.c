@@ -153,6 +153,9 @@ typedef struct
 #if defined(CONFIG_INCLUDE_VETH)
     OMETH_HOOK_H        pRxVethHookInst;                        ///< Pointer to virtual Ethernet receive hook
 #endif
+#if CONFIG_DLL_DEFERRED_RXFRAME_RELEASE_SYNC == TRUE
+    OMETH_HOOK_H        pRxPdoHookInst;                         ///< Pointer to PRes/Preq receive hook
+#endif
 } tEdrvInstance;
 
 //------------------------------------------------------------------------------
@@ -271,6 +274,16 @@ tOplkError edrv_init(tEdrvInitParam* pEdrvInitParam_p)
     if (edrvInstance_l.pRxVethHookInst == NULL)
     {
         DEBUG_LVL_ERROR_TRACE("%s() Rx hook creation for Veth frames failed!\n", __func__);
+        ret = kErrorNoResource;
+        goto Exit;
+    }
+#endif
+
+#if CONFIG_DLL_DEFERRED_RXFRAME_RELEASE_SYNC == TRUE
+    edrvInstance_l.pRxPdoHookInst = omethHookCreate(edrvInstance_l.pMacInst, rxHook, CONFIG_EDRV_RPDO_DEFERRED_RX_BUFFERS);
+    if (edrvInstance_l.pRxPdoHookInst == NULL)
+    {
+        DEBUG_LVL_ERROR_TRACE("%s() Rx hook creation for PDO frames failed!\n", __func__);
         ret = kErrorNoResource;
         goto Exit;
     }
@@ -1024,9 +1037,29 @@ static tOplkError initRxFilters(void)
                 pHook = edrvInstance_l.pRxVethHookInst;
                 break;
 #endif
+#if CONFIG_DLL_DEFERRED_RXFRAME_RELEASE_SYNC == TRUE
+            case DLLK_FILTER_PREQ:
+                pHook = edrvInstance_l.pRxPdoHookInst;
+                break;
+
+            default:
+                if ((i >= DLLK_FILTER_PRES) && (i < DLLK_FILTER_COUNT))
+                {
+                    // Assign PRes filter to hook for RPDO
+                    pHook = edrvInstance_l.pRxPdoHookInst;
+                }
+                else
+                {
+                    // All other frames are assigned to the hook without
+                    // pending capability
+                    pHook = edrvInstance_l.pRxHookInst;
+                }
+                break;
+#else
             default:
                 pHook = edrvInstance_l.pRxHookInst;
                 break;
+#endif
         }
 
         edrvInstance_l.apRxFilterInst[i] = omethFilterCreate(pHook, (void*)i, aMask, aValue);
