@@ -49,6 +49,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <kernel/eventk.h>
 #include <common/target.h>
 
+#include <oplk/dll.h>
+
+#include <oplk/benchmark.h>
+
+#include <sys/alt_irq.h> //FIXME
+#include <system.h> //FIXME
+#include <altera_avalon_timer_regs.h>
+
 //============================================================================//
 //            G L O B A L   D E F I N I T I O N S                             //
 //============================================================================//
@@ -97,6 +105,7 @@ static tEventkCalInstance   instance_l;             ///< Instance variable of ke
 // local function prototypes
 //------------------------------------------------------------------------------
 static BOOL checkForwardEventToKint(tEvent* pEvent_p);
+static INT taskTimerIsr(void* pArg_p);
 
 //============================================================================//
 //            P U B L I C   F U N C T I O N S                                 //
@@ -128,6 +137,14 @@ tOplkError eventkcal_init(void)
     if (eventkcal_initQueueCircbuf(kEventQueueKInt) != kErrorOk)
         goto Exit;
 
+    if (alt_ic_isr_register(PCP_0_TASK_TIMER_IRQ_INTERRUPT_CONTROLLER_ID, PCP_0_TASK_TIMER_IRQ, taskTimerIsr, NULL, NULL))
+        goto Exit;
+
+    IOWR_ALTERA_AVALON_TIMER_CONTROL (PCP_0_TASK_TIMER_BASE,
+                ALTERA_AVALON_TIMER_CONTROL_ITO_MSK  |
+                ALTERA_AVALON_TIMER_CONTROL_CONT_MSK |
+                ALTERA_AVALON_TIMER_CONTROL_START_MSK);
+
     instance_l.fInitialized = TRUE;
     return kErrorOk;
 
@@ -158,6 +175,7 @@ tOplkError eventkcal_exit(void)
 {
     if (instance_l.fInitialized == TRUE)
     {
+        alt_ic_isr_register(PCP_0_TASK_TIMER_IRQ_INTERRUPT_CONTROLLER_ID, PCP_0_TASK_TIMER_IRQ, NULL, NULL, NULL);
         eventkcal_exitQueueCircbuf(kEventQueueKInt);
         eventkcal_exitQueueCircbuf(kEventQueueK2U);
         eventkcal_exitQueueCircbuf(kEventQueueU2K);
@@ -185,6 +203,9 @@ This function posts a event to the kernel queue.
 tOplkError eventkcal_postKernelEvent(tEvent* pEvent_p)
 {
     tOplkError      ret = kErrorOk;
+
+    if (pEvent_p->eventType == kEventTypeDllkFillTx)
+        return kErrorOk;
 
     if (!checkForwardEventToKint(pEvent_p))
     {   // Forward event with direct call
@@ -244,11 +265,32 @@ void eventkcal_process(void)
     {
         eventkcal_processEventCircbuf(kEventQueueU2K);
     }
-
+#if 0
     if (eventkcal_getEventCountCircbuf(kEventQueueKInt) > 0)
     {
         eventkcal_processEventCircbuf(kEventQueueKInt);
     }
+#else
+    {
+        tEvent                  event;
+        tDllAsyncReqPriority    priority;
+
+        event.eventSink = kEventSinkDllk;
+        event.eventType = kEventTypeDllkFillTx;
+        event.netTime.nsec = 0;
+        event.netTime.sec = 0;
+        event.pEventArg = &priority;
+        event.eventArgSize = sizeof(priority);
+
+        priority = kDllAsyncReqPrioNmt;
+
+        eventk_process(&event);
+
+        priority = kDllAsyncReqPrioGeneric;
+
+        eventk_process(&event);
+    }
+#endif
 }
 
 //============================================================================//
@@ -286,6 +328,12 @@ static BOOL checkForwardEventToKint(tEvent* pEvent_p)
                     fRet = TRUE;
                     break;
 
+                case kEventTypePdoRx:
+                    // RPDO events shall be forwarded by internal queue.
+                    // This enables to process RPDO in medium priority task.
+                    fRet = TRUE;
+                    break;
+
                 default:
                     break;
             }
@@ -296,6 +344,22 @@ static BOOL checkForwardEventToKint(tEvent* pEvent_p)
     }
 
     return fRet;
+}
+
+static INT taskTimerIsr(void* pArg_p)
+{
+    UINT32 priority = (1 << PCP_0_TASK_TIMER_IRQ) - 1;
+    UNUSED_PARAMETER(pArg_p);
+
+    IOWR_ALTERA_AVALON_TIMER_STATUS (PCP_0_TASK_TIMER_BASE, 0);
+
+    BENCHMARK_SET(5);
+    alt_irq_enable_all(priority);
+    eventkcal_processEventCircbuf(kEventQueueKInt);
+    alt_irq_disable_all();
+    BENCHMARK_RESET(5);
+
+    return 0;
 }
 
 /// \}
