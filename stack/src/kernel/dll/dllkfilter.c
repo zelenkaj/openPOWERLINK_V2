@@ -44,6 +44,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <kernel/dllkfilter.h>
 
 #include "dllk-internal.h"
+#include "dllkframe.h"
 
 #include <common/ami.h>
 #include <oplk/frame.h>
@@ -179,6 +180,9 @@ void dllkfilter_setupPresFilter(tEdrvFilter* pFilter_p, BOOL fEnable_p)
     ami_setUint8Be(&pFilter_p->aFilterValue[14], kMsgTypePres);
     ami_setUint8Be(&pFilter_p->aFilterMask[14], 0xFF);
     pFilter_p->fEnable = fEnable_p;
+#if CONFIG_EDRV_FILTER_WITH_RX_HANDLER == TRUE
+    pFilter_p->pfnRxHandler = dllkframe_getRxHandler(kMsgTypePres);
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -209,6 +213,9 @@ void dllkfilter_setupPreqFilter(tEdrvFilter* pFilter_p, UINT nodeId_p,
     ami_setUint8Be(&pFilter_p->aFilterMask[16], 0xFF);
     pFilter_p->pTxBuffer = pBuffer_p;
     pFilter_p->fEnable = FALSE;
+#if CONFIG_EDRV_FILTER_WITH_RX_HANDLER == TRUE
+    pFilter_p->pfnRxHandler = dllkframe_getRxHandler(kMsgTypePreq);
+#endif
 }
 
 //----------------------------------------------------------------------------//
@@ -233,6 +240,9 @@ static void setupAsndFilter(tEdrvFilter* pFilter_p)
     ami_setUint8Be(&pFilter_p->aFilterValue[14], kMsgTypeAsnd);
     ami_setUint8Be(&pFilter_p->aFilterMask[14], 0xFF);
     pFilter_p->fEnable = TRUE;
+#if CONFIG_EDRV_FILTER_WITH_RX_HANDLER == TRUE
+    pFilter_p->pfnRxHandler = dllkframe_getRxHandler(kMsgTypeAsnd);
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -250,6 +260,9 @@ static void setupSocFilter(tEdrvFilter* pFilter_p)
     ami_setUint48Be(&pFilter_p->aFilterValue[0], C_DLL_MULTICAST_SOC);
     ami_setUint48Be(&pFilter_p->aFilterMask[0], C_DLL_MACADDR_MASK);
     pFilter_p->fEnable = TRUE;
+#if CONFIG_EDRV_FILTER_WITH_RX_HANDLER == TRUE
+    pFilter_p->pfnRxHandler = dllkframe_getRxHandler(kMsgTypeSoc);
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -267,6 +280,9 @@ static void setupSoaFilter(tEdrvFilter* pFilter_p)
     ami_setUint48Be(&pFilter_p->aFilterValue[0], C_DLL_MULTICAST_SOA);
     ami_setUint48Be(&pFilter_p->aFilterMask[0], C_DLL_MACADDR_MASK);
     pFilter_p->fEnable = TRUE;
+#if CONFIG_EDRV_FILTER_WITH_RX_HANDLER == TRUE
+    pFilter_p->pfnRxHandler = dllkframe_getRxHandler(kMsgTypeSoa);
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -302,6 +318,9 @@ static void setupSoaIdentReqFilter(tEdrvFilter* pFilter_p,
     ami_setUint8Be(&pFilter_p->aFilterMask[21], 0xFF);
     pFilter_p->pTxBuffer = pBuffer_p;
     pFilter_p->fEnable = FALSE;
+#if CONFIG_EDRV_FILTER_WITH_RX_HANDLER == TRUE
+    pFilter_p->pfnRxHandler = dllkframe_getRxHandler(kMsgTypeSoa);
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -337,6 +356,9 @@ static void setupSoaStatusReqFilter(tEdrvFilter* pFilter_p,
     ami_setUint8Be(&pFilter_p->aFilterMask[21], 0xFF);
     pFilter_p->pTxBuffer = pBuffer_p;
     pFilter_p->fEnable = FALSE;
+#if CONFIG_EDRV_FILTER_WITH_RX_HANDLER == TRUE
+    pFilter_p->pfnRxHandler = dllkframe_getRxHandler(kMsgTypeSoa);
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -372,6 +394,9 @@ static void setupSoaNmtReqFilter(tEdrvFilter* pFilter_p,
     ami_setUint8Be(&pFilter_p->aFilterMask[21], 0xFF);
     pFilter_p->pTxBuffer = pBuffer_p;
     pFilter_p->fEnable = FALSE;
+#if CONFIG_EDRV_FILTER_WITH_RX_HANDLER == TRUE
+    pFilter_p->pfnRxHandler = dllkframe_getRxHandler(kMsgTypeSoa);
+#endif
 }
 
 
@@ -409,6 +434,9 @@ static void setupSoaSyncReqFilter(tEdrvFilter* pFilter_p,
     ami_setUint8Be(&pFilter_p->aFilterMask[21], 0xFF);
     pFilter_p->pTxBuffer = pBuffer_p;
     pFilter_p->fEnable = FALSE;
+#if CONFIG_EDRV_FILTER_WITH_RX_HANDLER == TRUE
+    pFilter_p->pfnRxHandler = dllkframe_getRxHandler(kMsgTypeSoa);
+#endif
 }
 #endif
 
@@ -445,6 +473,9 @@ static void setupSoaUnspecReqFilter(tEdrvFilter* pFilter_p,
     ami_setUint8Be(&pFilter_p->aFilterMask[21], 0xFF);
     pFilter_p->pTxBuffer = pBuffer_p;
     pFilter_p->fEnable = FALSE;
+#if CONFIG_EDRV_FILTER_WITH_RX_HANDLER == TRUE
+    pFilter_p->pfnRxHandler = dllkframe_getRxHandler(kMsgTypeSoa);
+#endif
 }
 
 #if defined(CONFIG_INCLUDE_VETH)
@@ -468,6 +499,9 @@ static void setupVethUnicast(tEdrvFilter* pFilter_p, UINT8* pMacAdrs_p, BOOL fEn
 
     pFilter_p->pTxBuffer = NULL;
     pFilter_p->fEnable = fEnable_p;
+#if CONFIG_EDRV_FILTER_WITH_RX_HANDLER == TRUE
+    pFilter_p->pfnRxHandler = dllkframe_getRxHandler(kMsgTypeNonPowerlink);
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -489,6 +523,9 @@ static void setupVethBroadcast(tEdrvFilter* pFilter_p, BOOL fEnable_p)
 
     pFilter_p->pTxBuffer = NULL;
     pFilter_p->fEnable = fEnable_p;
+#if CONFIG_EDRV_FILTER_WITH_RX_HANDLER == TRUE
+    pFilter_p->pfnRxHandler = dllkframe_getRxHandler(kMsgTypeNonPowerlink);
+#endif
 }
 #endif
 

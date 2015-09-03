@@ -72,6 +72,10 @@ extern "C"
 tEdrvReleaseRxBuffer dllkframe_processFrameReceived(tEdrvRxBuffer* pRxBuffer_p)
                      SECTION_DLLK_FRAME_RCVD_CB;
 
+#if CONFIG_EDRV_FILTER_WITH_RX_HANDLER == TRUE
+tEdrvRxHandler dllkframe_getRxHandler(tMsgType msgType_p);
+#endif
+
 void       dllkframe_processTransmittedNmtReq(tEdrvTxBuffer* pTxBuffer_p)
            SECTION_DLLK_PROCESS_TX_NMT;
 void       dllkframe_processTransmittedNonPlk(tEdrvTxBuffer* pTxBuffer_p)

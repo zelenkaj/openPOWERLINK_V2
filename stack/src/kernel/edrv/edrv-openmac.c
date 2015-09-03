@@ -153,6 +153,9 @@ typedef struct
 #if defined(CONFIG_INCLUDE_VETH)
     OMETH_HOOK_H        pRxVethHookInst;                        ///< Pointer to virtual Ethernet receive hook
 #endif
+#if CONFIG_EDRV_FILTER_WITH_RX_HANDLER == TRUE
+    tEdrvRxHandler      apfnRxHandler[EDRV_MAX_FILTERS];        ///< Array of frame received callbacks
+#endif
 #if CONFIG_EDRV_USE_DIAGNOSTICS != FALSE
     UINT                asyncFrameLostCount;                    ///< Number of ASync frame not released to openMAC
     UINT                vethFrameLostCount;                     ///< Number of VEth frame not released to openMAC
@@ -754,6 +757,11 @@ tOplkError edrv_changeRxFilter(tEdrvFilter* pFilter_p, UINT count_p,
                 }
 #endif
             }
+#endif
+
+#if CONFIG_EDRV_FILTER_WITH_RX_HANDLER == TRUE
+            // Store Rx handler callbacks
+            edrvInstance_l.apfnRxHandler[entry] = pFilter_p[entry].pfnRxHandler;
 #endif
 
             if (pFilter_p[entry].fEnable != FALSE)
@@ -1403,6 +1411,9 @@ static INT rxHook(void* pArg_p, ometh_packet_typ* pPacket_p, OMETH_BUF_FREE_FCT*
 #else
     UNUSED_PARAMETER(pArg_p);
 #endif
+#if CONFIG_EDRV_FILTER_WITH_RX_HANDLER == TRUE
+    tEdrvRxHandler          pfnRxHandler = edrvInstance_l.apfnRxHandler[(UINT)pArg_p];
+#endif
     UNUSED_PARAMETER(pfnFree_p);
 
     rxBuffer.bufferInFrame = kEdrvBufferLastInFrame;
@@ -1415,7 +1426,20 @@ static INT rxHook(void* pArg_p, ometh_packet_typ* pPacket_p, OMETH_BUF_FREE_FCT*
     // memory range.
     OPENMAC_INVALIDATEDATACACHE((UINT8*)rxBuffer.pBuffer, rxBuffer.rxFrameSize);
 
-    releaseRxBuffer = edrvInstance_l.initParam.pfnRxHandler(&rxBuffer); //pass frame to Powerlink Stack
+#if CONFIG_EDRV_FILTER_WITH_RX_HANDLER == TRUE
+    if (pfnRxHandler != NULL)
+    {
+        // Directly call DLLk process function
+        releaseRxBuffer = pfnRxHandler(&rxBuffer);
+    }
+    else
+#endif
+    {
+        BENCHMARK_SET(6);
+        // Pass frame to DLLk general process function
+        releaseRxBuffer = edrvInstance_l.initParam.pfnRxHandler(&rxBuffer);
+        BENCHMARK_RESET(6);
+    }
 
     if (releaseRxBuffer == kEdrvReleaseRxBufferLater)
     {

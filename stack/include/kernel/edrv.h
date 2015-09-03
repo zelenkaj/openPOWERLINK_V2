@@ -198,7 +198,7 @@ typedef struct
     UINT8           aFilterValue[22];   ///< Rx filter values
     UINT8           aFilterMask[22];    ///< Rx filter mask
     tEdrvTxBuffer*  pTxBuffer;          ///< Tx frame to be transmitted when filter matches
-#if (EDRV_FILTER_WITH_RX_HANDLER != FALSE)
+#if (CONFIG_EDRV_FILTER_WITH_RX_HANDLER != FALSE)
     tEdrvRxHandler  pfnRxHandler;       ///< Rx frame callback function pointer for this filter
 #endif
 } tEdrvFilter;

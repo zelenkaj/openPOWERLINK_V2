@@ -292,6 +292,68 @@ Exit:
 
 //------------------------------------------------------------------------------
 /**
+\brief  Get Rx handler for filter handle
+
+The function returns the function pointer to the callback of the given Rx handle.
+
+\param  handle_p            Handle of interest
+
+\return The function returns the function pointer to the callback for the
+        given Rx handle.
+*/
+//------------------------------------------------------------------------------
+tEdrvRxHandler dllkframe_getRxHandler(tMsgType msgType_p)
+{
+    tEdrvRxHandler pfnRxHandler = NULL;
+
+    switch (msgType_p)
+    {
+        case kMsgTypePreq:
+            pfnRxHandler = processReceivedPreq;
+            break;
+
+        case kMsgTypePres:
+            pfnRxHandler = processReceivedPres;
+            break;
+
+        case kMsgTypeSoc:
+            pfnRxHandler = processReceivedSoc;
+            break;
+
+#if defined(CONFIG_INCLUDE_NMT_RMN)
+        case kMsgTypeAmni:
+            pfnRxHandler = processReceivedAmni;
+            break;
+#endif
+
+#if defined(CONFIG_INCLUDE_MASND)
+        case kMsgTypeAInv:
+            pfnRxHandler = processReceivedSoa;
+            break;
+#endif
+
+        case kMsgTypeSoa:
+            pfnRxHandler = processReceivedSoa;
+            break;
+
+        case kMsgTypeAsnd:
+            pfnRxHandler = processReceivedAsnd;
+            break;
+
+        case kMsgTypeNonPowerlink:
+            pfnRxHandler = processReceivedNonPlk;
+            break;
+
+        default:
+            pfnRxHandler = NULL;
+            break;
+    }
+
+    return pfnRxHandler;
+}
+
+//------------------------------------------------------------------------------
+/**
 \brief  Callback function for transmitted NMT request frame
 
 The function implements the callback function which is called when a NMT request
