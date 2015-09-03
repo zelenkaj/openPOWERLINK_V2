@@ -119,6 +119,8 @@ static tOplkError processReceivedAmni(tEdrvRxBuffer* pRxBuffer_p, tNmtState nmtS
 static tOplkError processReceivedSoa(tEdrvRxBuffer* pRxBuffer_p, tNmtState nmtState_p);
 static tOplkError processReceivedAsnd(tFrameInfo* pFrameInfo_p, tEdrvRxBuffer* pRxBuffer_p,
                                       tNmtState nmtState_p, tEdrvReleaseRxBuffer* pReleaseRxBuffer_p);
+static tOplkError processReceivedNonPlk(tFrameInfo* pFrameInfo_p,
+                                        tEdrvReleaseRxBuffer* pReleaseRxBuffer_p);
 static INLINE tOplkError forwardRpdo(tFrameInfo* pFrameInfo_p);
 static INLINE void       postInvalidFormatError(UINT nodeId_p, tNmtState nmtState_p);
 static BOOL       presFrameFormatIsInvalid(tFrameInfo* pFrameInfo_p, tDllkNodeInfo* pIntNodeInfo_p,
@@ -240,12 +242,8 @@ tEdrvReleaseRxBuffer dllkframe_processFrameReceived(tEdrvRxBuffer* pRxBuffer_p)
     frameInfo.frameSize = pRxBuffer_p->rxFrameSize;
 
     if (ami_getUint16Be(&pFrame->etherType) != C_DLL_ETHERTYPE_EPL)
-    {   // non-POWERLINK frame
-        //TRACE("cbFrameReceived: pfnCbAsync=0x%p SrcMAC=0x%llx\n", dllkInstance_g.pfnCbAsync, ami_getUint48Be(pFrame->aSrcMac));
-        if (dllkInstance_g.pfnCbAsync != NULL)
-        {   // handler for async frames is registered
-            ret = dllkInstance_g.pfnCbAsync(&frameInfo, &releaseRxBuffer);
-        }
+    {
+        processReceivedNonPlk(&frameInfo, &releaseRxBuffer);
         goto Exit;
     }
 
@@ -2707,6 +2705,35 @@ static tOplkError processReceivedAsnd(tFrameInfo* pFrameInfo_p, tEdrvRxBuffer* p
     }
 
 Exit:
+    return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+\brief  Process received non-POWERLINK frame
+
+The function processes a received non-POWERLINK frame.
+
+\param  pFrameInfo_p        Pointer to frame information.
+\param  pReleaseRxBuffer_p  Pointer to buffer release flag. The function must
+                            set this flag to determine if the RxBuffer could be
+                            released immediately.
+
+\return The function returns a tOplkError error code.
+*/
+//------------------------------------------------------------------------------
+static tOplkError processReceivedNonPlk(tFrameInfo* pFrameInfo_p,
+                                        tEdrvReleaseRxBuffer* pReleaseRxBuffer_p)
+{
+    tOplkError ret = kErrorOk;
+
+    // non-POWERLINK frame
+    //TRACE("%s: pfnCbAsync=0x%p SrcMAC=0x%llx\n", __func__, dllkInstance_g.pfnCbAsync, ami_getUint48Be(pFrameInfo_p->pFrame->aSrcMac));
+    if (dllkInstance_g.pfnCbAsync != NULL)
+    {   // handler for async frames is registered
+        ret = dllkInstance_g.pfnCbAsync(pFrameInfo_p, pReleaseRxBuffer_p);
+    }
+
     return ret;
 }
 
