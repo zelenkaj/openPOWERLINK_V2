@@ -37,17 +37,24 @@ APP_SOURCES="\
 ${OPLK_BASE_DIR}/apps/common/src/lcd/lcd.c \
 ${OPLK_BASE_DIR}/apps/common/src/lcd/lcdl-16207.c \
 ${OPLK_BASE_DIR}/apps/common/src/gpio/gpio-nios2.c \
-${OPLK_BASE_DIR}/apps/common/src/arp/arp.c \
 ${OPLK_BASE_DIR}/apps/demo_cn_embedded/src/app.c \
 ${OPLK_BASE_DIR}/apps/demo_cn_embedded/src/event.c \
 ${OPLK_BASE_DIR}/apps/demo_cn_embedded/src/main.c \
+${OPLK_BASE_DIR}/contrib/ipstack/edrv2veth.c \
+${OPLK_BASE_DIR}/contrib/ipstack/hton.c \
+${OPLK_BASE_DIR}/contrib/ipstack/ip.c \
+${OPLK_BASE_DIR}/contrib/ipstack/ip_dhcp.c \
+${OPLK_BASE_DIR}/contrib/ipstack/ip_name.c \
+${OPLK_BASE_DIR}/contrib/ipstack/ip_sock.c \
+${OPLK_BASE_DIR}/contrib/ipstack/socketwrapper.c \
 "
 
 APP_INCLUDES="\
 ${OPLK_BASE_DIR}/apps/common/src/gpio \
 ${OPLK_BASE_DIR}/apps/common/src/lcd \
-${OPLK_BASE_DIR}/apps/common/src/arp \
 ${OPLK_BASE_DIR}/stack/include \
+${OPLK_BASE_DIR}/contrib/ipstack \
+${OPLK_BASE_DIR}/contrib/socketwrapper \
 "
 
 APP_CFLAGS="\
