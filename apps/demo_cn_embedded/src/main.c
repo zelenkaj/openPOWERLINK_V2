@@ -47,7 +47,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <gpio.h>
 #include <lcd.h>
-#include <arp.h>
+#include <edrv2veth.h>
 
 #include "app.h"
 #include "event.h"
@@ -148,7 +148,6 @@ int main(void)
     instance_l.aMacAddr[5]  = instance_l.nodeId;
 
     initEvents(&eventCbPowerlink);
-    arp_init((UINT8)instance_l.nodeId);
 
     PRINTF("----------------------------------------------------\n");
     PRINTF("openPOWERLINK embedded CN DEMO application\n");
@@ -173,7 +172,7 @@ int main(void)
     loopMain(&instance_l);
 
 Exit:
-    arp_exit();
+    edrv2veth_exit();
     shutdownApp();
     shutdownPowerlink(&instance_l);
 
@@ -265,13 +264,15 @@ static tOplkError initPowerlink(tInstance* pInstance_p)
 
     // Set real MAC address to ARP module
     oplk_getEthMacAddr(initParam.aMacAddress);
-    arp_setMacAddr(initParam.aMacAddress);
+    ret = edrv2veth_init((eth_addr*)initParam.aMacAddress);
+    if (ret != kErrorOk)
+    {
+        PRINTF("edrv2veth_init returned with 0x%X\n", ret);
+        return ret;
+    }
 
-    // Set IP address to ARP module
-    arp_setIpAddr(initParam.ipAddress);
-
-    // Set default gateway to ARP module
-    arp_setDefGateway(initParam.defaultGateway);
+    edrv2veth_changeAddress(initParam.ipAddress, initParam.subnetMask, (UINT16)initParam.asyncMtu);
+    edrv2veth_changeGateway(initParam.defaultGateway);
 
     return kErrorOk;
 }
@@ -301,6 +302,11 @@ static tOplkError loopMain(tInstance* pInstance_p)
         // do background tasks
         if ((ret = oplk_process()) != kErrorOk)
             break;
+
+        if ((ret = edrv2veth_process()) != kErrorOk)
+        {
+            pInstance_p->fShutdown = TRUE;
+        }
 
         // trigger switch off
         if (pInstance_p->fShutdown != FALSE)
@@ -365,6 +371,7 @@ static tOplkError eventCbPowerlink(tOplkApiEventType eventType_p,
     {
         case kOplkApiEventNmtStateChange:
             lcd_printNmtState(pEventArg_p->nmtStateChange.newNmtState);
+            edrv2veth_setNmtState(pEventArg_p->nmtStateChange.newNmtState);
 
             switch (pEventArg_p->nmtStateChange.newNmtState)
             {
@@ -377,8 +384,6 @@ static tOplkError eventCbPowerlink(tOplkApiEventType eventType_p,
                     break;
 
                 case kNmtCsBasicEthernet:
-                    // ARP demo: Send request to MN
-                    arp_sendRequest((0xFFFFFF00 & IP_ADDR) | C_ADR_MN_DEF_NODE_ID);
                     break;
 
                 case kNmtCsPreOperational2:
@@ -396,20 +401,12 @@ static tOplkError eventCbPowerlink(tOplkApiEventType eventType_p,
             break;
 
         case kOplkApiEventReceivedNonPlk:
-            if (arp_processReceive(pFrameInfo->pFrame, pFrameInfo->frameSize) == 0)
-                return kErrorOk;
-
-            // If you get here, the received Ethernet frame is no ARP frame.
-            // Here you can call other protocol stacks for processing.
-
-            ret = kErrorOk; // Frame wasn't processed, so simply dump it.
+            ret = edrv2veth_receiveHandler((UINT8*)pFrameInfo->pFrame,
+                                           pFrameInfo->frameSize);
             break;
 
         case kOplkApiEventDefaultGwChange:
-            // ARP demo: Set default gateway and send request
-            arp_setDefGateway(pEventArg_p->defaultGwChange.defaultGateway);
-
-            arp_sendRequest(pEventArg_p->defaultGwChange.defaultGateway);
+            edrv2veth_changeGateway(pEventArg_p->defaultGwChange.defaultGateway);
             break;
 
         default:
