@@ -61,9 +61,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 tOplkError edrv2veth_init (eth_addr* pEthMac);
 void edrv2veth_exit (void);
-tOplkError edrv2veth_setIpHandler(IP_STACK_H pIpHandler);
-ULONG edrv2veth_transmit( void *hEth, ip_packet_typ *pPacket,
-        IP_BUF_FREE_FCT *pFctFree);
-
+ULONG edrv2veth_transmit( void *hEth, ip_packet_typ *pPacket, IP_BUF_FREE_FCT *pFctFree);
+void edrv2veth_changeAddress( UINT32 ipAddr_p, UINT32 subNetMask_p, UINT16 mtu_p );
+void edrv2veth_changeGateway( UINT32 defGateway_p );
+void edrv2veth_setNmtState(tNmtState nmtState_p);
+tOplkError edrv2veth_receiveHandler(UINT8* pFrame_p, UINT32 frameSize_p);
+tOplkError edrv2veth_process(void);
 
 #endif /* _INC_edrv2veth_H_ */
