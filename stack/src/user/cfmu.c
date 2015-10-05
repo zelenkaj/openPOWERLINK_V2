@@ -1042,16 +1042,48 @@ static tOplkError sdoWriteObject(tCfmNodeInfo* pNodeInfo_p, void* pLeSrcData_p, 
 {
     tOplkError                  ret = kErrorOk;
     tSdoComTransParamByIndex    transParamByIndex;
+    tIdentResponse*             pIdentResponse = NULL;
+    tSdoType                    sdoType;
 
     if ((pLeSrcData_p == NULL) || (size_p == 0))
         return kErrorApiInvalidParam;
+
+    identu_getIdentResponse(pNodeInfo_p->eventCnProgress.nodeId, &pIdentResponse);
+    if (pIdentResponse != NULL)
+    {
+        UINT32 featureFlags = ami_getUint32Le(&pIdentResponse->featureFlagsLe);
+
+        if (featureFlags & PLK_FEATURE_SDO_ASND)
+        {
+            // First priority: SDO over ASnd
+            sdoType = kSdoTypeAsnd;
+        }
+        else if (featureFlags & PLK_FEATURE_SDO_UDP)
+        {
+            // Second priority: SDO over UDP
+            sdoType = kSdoTypeUdp;
+        }
+    }
+    else
+    {
+#if defined(CONFIG_INCLUDE_SDO_ASND)
+        sdoType = kSdoTypeAsnd;
+#elif defined(CONFIG_INCLUDE_SDO_UDP)
+        sdoType = kSdoTypeUdp;
+#endif
+    }
+
+    printf("%s Connect to node %d with SDO over %s\n",
+           __func__, pNodeInfo_p->eventCnProgress.nodeId,
+           (sdoType == kSdoTypeAsnd) ? "ASnd" :
+           ((sdoType == kSdoTypeUdp) ? "UDP" : "unknown"));
 
     if (pNodeInfo_p->sdoComConHdl == UINT_MAX)
     {
         // init command layer connection
         ret = sdocom_defineConnection(&pNodeInfo_p->sdoComConHdl,
                                       pNodeInfo_p->eventCnProgress.nodeId,
-                                      kSdoTypeAsnd);
+                                      sdoType);
         if ((ret != kErrorOk) && (ret != kErrorSdoComHandleExists))
             return ret;
     }
@@ -1088,7 +1120,7 @@ static tOplkError sdoWriteObject(tCfmNodeInfo* pNodeInfo_p, void* pLeSrcData_p, 
         // reinit command layer connection
         ret = sdocom_defineConnection(&pNodeInfo_p->sdoComConHdl,
                                       pNodeInfo_p->eventCnProgress.nodeId,
-                                      kSdoTypeAsnd);
+                                      sdoType);
         if ((ret != kErrorOk) && (ret != kErrorSdoComHandleExists))
             return ret;
 
