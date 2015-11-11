@@ -51,6 +51,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <common/target.h>
 #include <kernel/pdokcal.h>
 
+#include <oplk/benchmark.h>
+
+#include <system.h>
+#include <altera_avalon_dma_regs.h>
+#include <sys/alt_irq.h>
+
 //============================================================================//
 //            G L O B A L   D E F I N I T I O N S                             //
 //============================================================================//
@@ -58,6 +64,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //------------------------------------------------------------------------------
 // const defines
 //------------------------------------------------------------------------------
+#define PDO_DMA_TRANSFER_TX
+#define PDO_DMA_TRANSFER_RX
+
+#if defined(PDO_DMA_TRANSFER_TX) || defined(PDO_DMA_TRANSFER_RX)
+#define PDO_DMA_TRANSFER
+#endif
 
 //------------------------------------------------------------------------------
 // module global vars
@@ -80,6 +92,22 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // local types
 //------------------------------------------------------------------------------
 
+typedef struct
+{
+    UINT8*  pRead;
+    UINT8*  pWrite;
+    size_t  length;
+    BOOL    fRx;
+    UINT    channelId;
+} tPdoDmaDesc;
+
+typedef struct
+{
+    UINT            writeIndex;
+    UINT            readIndex;
+    tPdoDmaDesc     aBuffer[512];
+} tPdoDmaDescFifo;
+
 //------------------------------------------------------------------------------
 // local vars
 //------------------------------------------------------------------------------
@@ -87,10 +115,19 @@ static tPdoMemRegion*       pPdoMem_l;
 static size_t               pdoMemRegionSize_l;
 static BYTE*                pTripleBuf_l[3];
 
+static tPdoDmaDescFifo      pdoDmaFifo_l;
+static tPdoDmaDesc          pdoDmaCurrent_l;
+static BOOL                 fPdoDmaActive_l;
+
 //------------------------------------------------------------------------------
 // local function prototypes
 //------------------------------------------------------------------------------
 static void setupPdoMemInfo(tPdoChannelSetup* pPdoChannels_p, tPdoMemRegion* pPdoMemRegion_p);
+static tOplkError initDma(void);
+static void pdoCopy(tPdoDmaDesc* pPdoDmaDesc_p);
+static void startDmaCopy(tPdoDmaDesc* pPdoDmaDesc_p);
+static void dmaIsr(void* pArg_p);
+static BOOL getNextDmaCopy(tPdoDmaDesc* pPdoDmaDesc_p);
 
 //============================================================================//
 //            P U B L I C   F U N C T I O N S                                 //
@@ -145,6 +182,11 @@ tOplkError pdokcal_initPdoMem(tPdoChannelSetup* pPdoChannels, size_t rxPdoMemSiz
 {
     BYTE*   pMem;
     size_t  pdoMemSize;
+
+#if defined(PDO_DMA_TRANSFER)
+    if (initDma() != kErrorOk)
+        return kErrorNoResource;
+#endif
 
     pdoMemSize = txPdoMemSize_p + rxPdoMemSize_p;
 
@@ -217,6 +259,7 @@ tOplkError pdokcal_writeRxPdo(UINT channelId_p, BYTE* pPayload_p, UINT16 pdoSize
 {
     BYTE*           pPdo;
     OPLK_ATOMIC_T   temp;
+    tPdoDmaDesc     desc;
 
     // Invalidate data cache for addressed rxChannelInfo
     OPLK_DCACHE_INVALIDATE(&(pPdoMem_l->rxChannelInfo[channelId_p]), sizeof(tPdoBufferInfo));
@@ -225,6 +268,7 @@ tOplkError pdokcal_writeRxPdo(UINT channelId_p, BYTE* pPayload_p, UINT16 pdoSize
            pPdoMem_l->rxChannelInfo[channelId_p].channelOffset;
     //TRACE("%s() chan:%d wi:%d\n", __func__, channelId_p, pPdoMem_l->rxChannelInfo[channelId_p].writeBuf);
 
+#if !defined(PDO_DMA_TRANSFER_RX)
     OPLK_MEMCPY(pPdo, pPayload_p, pdoSize_p);
 
     OPLK_DCACHE_FLUSH(pPdo, pdoSize_p);
@@ -239,6 +283,16 @@ tOplkError pdokcal_writeRxPdo(UINT channelId_p, BYTE* pPayload_p, UINT16 pdoSize
     // Flush data cache for variables changed in this function
     OPLK_DCACHE_FLUSH(&(pPdoMem_l->rxChannelInfo[channelId_p].writeBuf), sizeof(OPLK_ATOMIC_T));
     OPLK_DCACHE_FLUSH(&(pPdoMem_l->rxChannelInfo[channelId_p].newData), sizeof(UINT8));
+#else
+    UNUSED_PARAMETER(temp);
+
+    desc.pWrite = (UINT8*)pPdo;
+    desc.pRead = (UINT8*)pPayload_p;
+    desc.length = (size_t)pdoSize_p;
+    desc.fRx = TRUE;
+    desc.channelId = channelId_p;
+    pdoCopy(&desc);
+#endif
 
     //TRACE("%s() chan:%d new wi:%d\n", __func__, channelId_p, pPdoMem_l->rxChannelInfo[channelId_p].writeBuf);
     //TRACE("%s() *pPayload_p:%02x\n", __func__, *pPayload_p);
@@ -264,6 +318,7 @@ tOplkError pdokcal_readTxPdo(UINT channelId_p, BYTE* pPayload_p, UINT16 pdoSize_
 {
     BYTE*           pPdo;
     OPLK_ATOMIC_T   readBuf;
+    tPdoDmaDesc     desc;
 
     // Invalidate data cache for addressed txChannelInfo
     OPLK_DCACHE_INVALIDATE(&(pPdoMem_l->txChannelInfo[channelId_p]), sizeof(tPdoBufferInfo));
@@ -287,9 +342,18 @@ tOplkError pdokcal_readTxPdo(UINT channelId_p, BYTE* pPayload_p, UINT16 pdoSize_
     pPdo = pTripleBuf_l[pPdoMem_l->txChannelInfo[channelId_p].readBuf] +
            pPdoMem_l->txChannelInfo[channelId_p].channelOffset;
 
+#if !defined(PDO_DMA_TRANSFER_TX)
     OPLK_DCACHE_INVALIDATE(pPdo, pdoSize_p);
 
     OPLK_MEMCPY(pPayload_p, pPdo, pdoSize_p);
+#else
+    desc.pWrite = (UINT8*)pPayload_p;
+    desc.pRead = (UINT8*)pPdo;
+    desc.length = (size_t)pdoSize_p;
+    desc.fRx = FALSE;
+    desc.channelId = channelId_p;
+    pdoCopy(&desc);
+#endif
 
     return kErrorOk;
 }
@@ -348,6 +412,204 @@ static void setupPdoMemInfo(tPdoChannelSetup* pPdoChannels_p, tPdoMemRegion* pPd
     pPdoMemRegion_p->pdoMemSize = offset;
 
     OPLK_DCACHE_FLUSH(pPdoMemRegion_p, sizeof(tPdoMemRegion));
+}
+
+static tOplkError initDma(void)
+{
+    OPLK_MEMSET(&pdoDmaFifo_l, 0, sizeof(pdoDmaFifo_l));
+    OPLK_MEMSET(&pdoDmaCurrent_l, 0, sizeof(pdoDmaCurrent_l));
+
+    fPdoDmaActive_l = FALSE;
+
+    // Clear DMA status register
+    IOWR_ALTERA_AVALON_DMA_STATUS(DMA_0_BASE, 0);
+
+    // Clear DMA control register
+    IOWR_ALTERA_AVALON_DMA_CONTROL(DMA_0_BASE, 0);
+
+    if (alt_ic_isr_register(0, 4, dmaIsr, NULL, NULL))
+        return kErrorNoResource;
+
+    return kErrorOk;
+}
+
+static void pdoCopy(tPdoDmaDesc* pPdoDmaDesc_p)
+{
+    if (fPdoDmaActive_l)
+    {
+        // Push to fifo
+        if ((pdoDmaFifo_l.writeIndex - pdoDmaFifo_l.readIndex) < tabentries(pdoDmaFifo_l.aBuffer))
+        {
+            UINT writeIndex = pdoDmaFifo_l.writeIndex & (tabentries(pdoDmaFifo_l.aBuffer)-1);
+
+            OPLK_MEMCPY(&pdoDmaFifo_l.aBuffer[writeIndex], pPdoDmaDesc_p, sizeof(*pPdoDmaDesc_p));
+            pdoDmaFifo_l.writeIndex++;
+        }
+        else
+        {
+            BENCHMARK_TOGGLE(7);
+            DEBUG_LVL_ERROR_TRACE("%s DMA fifo full!\n", __func__);
+        }
+
+        // Check if DMA is still busy, otherwise push next transfer
+        if (!(IORD_ALTERA_AVALON_DMA_STATUS(DMA_0_BASE) & ALTERA_AVALON_DMA_STATUS_BUSY_MSK))
+        {
+            tPdoDmaDesc desc;
+
+            if (getNextDmaCopy(&desc))
+            {
+                startDmaCopy(&desc);
+            }
+            else
+            {
+                // Very unusual, but maybe?!
+                fPdoDmaActive_l = FALSE;
+            }
+        }
+    }
+    else
+    {
+        fPdoDmaActive_l = TRUE;
+        startDmaCopy(pPdoDmaDesc_p);
+    }
+}
+
+#define PDO_DMA_ALIGN(x)    ((((UINT32)x) + 3) & ~3)
+
+static void startDmaCopy(tPdoDmaDesc* pPdoDmaDesc_p)
+{
+    UINT32  dmaControl;
+
+    BENCHMARK_SET(5);
+
+    // Check for busy DMA, shouldn't be!
+    if (IORD_ALTERA_AVALON_DMA_STATUS(DMA_0_BASE) & ALTERA_AVALON_DMA_STATUS_BUSY_MSK)
+    {
+        DEBUG_LVL_ERROR_TRACE("%s DMA is still busy!\n", __func__);
+        BENCHMARK_TOGGLE(7);
+        BENCHMARK_RESET(5);
+        return;
+    }
+
+    IOWR_ALTERA_AVALON_DMA_STATUS(DMA_0_BASE, 0);
+    IOWR_ALTERA_AVALON_DMA_CONTROL(DMA_0_BASE, 0);
+
+    // Remember DMA descriptor
+    OPLK_MEMCPY(&pdoDmaCurrent_l, pPdoDmaDesc_p, sizeof(pdoDmaCurrent_l));
+
+    if (((UINT32)pPdoDmaDesc_p->pRead) & 3)
+    {
+        __asm("break");
+    }
+
+    if (((UINT32)pPdoDmaDesc_p->pWrite) & 3)
+    {
+        __asm("break");
+    }
+
+    // Align addresses to 32 bit
+    pPdoDmaDesc_p->pRead = (UINT8*)PDO_DMA_ALIGN(pPdoDmaDesc_p->pRead);
+    pPdoDmaDesc_p->pWrite = (UINT8*)PDO_DMA_ALIGN(pPdoDmaDesc_p->pWrite);
+    pPdoDmaDesc_p->length = (size_t)PDO_DMA_ALIGN(pPdoDmaDesc_p->length);
+
+    if (((UINT32)pPdoDmaDesc_p->pRead) & 3)
+    {
+        __asm("break");
+    }
+
+    if (((UINT32)pPdoDmaDesc_p->pWrite) & 3)
+    {
+        __asm("break");
+    }
+
+    if (((UINT32)pPdoDmaDesc_p->length) & 3)
+    {
+        __asm("break");
+    }
+
+    // Set transfer config to DMA registers
+    IOWR_ALTERA_AVALON_DMA_RADDRESS(DMA_0_BASE, (UINT32)pPdoDmaDesc_p->pRead);
+    IOWR_ALTERA_AVALON_DMA_WADDRESS(DMA_0_BASE, (UINT32)pPdoDmaDesc_p->pWrite);
+    IOWR_ALTERA_AVALON_DMA_LENGTH(DMA_0_BASE, (UINT32)pPdoDmaDesc_p->length);
+
+    // Setup DMA control register settings
+    dmaControl = ALTERA_AVALON_DMA_CONTROL_WORD_MSK |   /* Word transfer (32 bit) */
+                 ALTERA_AVALON_DMA_CONTROL_I_EN_MSK |   /* Interrupt enable when done */
+                 ALTERA_AVALON_DMA_CONTROL_LEEN_MSK |   /* End transfer when length reaches zero */
+                 0;
+
+    IOWR_ALTERA_AVALON_DMA_CONTROL(DMA_0_BASE, dmaControl);
+
+    dmaControl = IORD_ALTERA_AVALON_DMA_CONTROL(DMA_0_BASE);
+
+    dmaControl |= ALTERA_AVALON_DMA_CONTROL_GO_MSK;
+
+    IOWR_ALTERA_AVALON_DMA_CONTROL(DMA_0_BASE, dmaControl);
+
+    BENCHMARK_RESET(5);
+}
+
+static void dmaIsr(void* pArg_p)
+{
+    tPdoDmaDesc desc;
+
+    UNUSED_PARAMETER(pArg_p);
+
+    BENCHMARK_SET(6);
+
+    // Clear DMA status register
+    IOWR_ALTERA_AVALON_DMA_STATUS(DMA_0_BASE, 0);
+    IOWR_ALTERA_AVALON_DMA_CONTROL(DMA_0_BASE, 0);
+
+    // Handle Rx PDOs
+    if (pdoDmaCurrent_l.fRx)
+    {
+        OPLK_ATOMIC_T   temp;
+        UINT            channelId = pdoDmaCurrent_l.channelId;
+
+        temp = pPdoMem_l->rxChannelInfo[channelId].writeBuf;
+        OPLK_ATOMIC_EXCHANGE(&pPdoMem_l->rxChannelInfo[channelId].cleanBuf,
+                             temp,
+                             pPdoMem_l->rxChannelInfo[channelId].writeBuf);
+
+        pPdoMem_l->rxChannelInfo[channelId].newData = 1;
+
+        // Flush data cache for variables changed in this function
+        OPLK_DCACHE_FLUSH(&(pPdoMem_l->rxChannelInfo[channelId].writeBuf), sizeof(OPLK_ATOMIC_T));
+        OPLK_DCACHE_FLUSH(&(pPdoMem_l->rxChannelInfo[channelId].newData), sizeof(UINT8));
+
+        //TODO: Release Rx buffer
+    }
+
+    if (getNextDmaCopy(&desc))
+    {
+        startDmaCopy(&desc);
+    }
+    else
+    {
+        fPdoDmaActive_l = FALSE;
+    }
+
+    BENCHMARK_RESET(6);
+}
+
+static BOOL getNextDmaCopy(tPdoDmaDesc* pPdoDmaDesc_p)
+{
+    if (pPdoDmaDesc_p == NULL)
+        return FALSE;
+
+    if ((pdoDmaFifo_l.writeIndex - pdoDmaFifo_l.readIndex) > 0)
+    {
+        tPdoDmaDesc desc;
+        UINT        readIndex = pdoDmaFifo_l.readIndex & (tabentries(pdoDmaFifo_l.aBuffer)-1);
+
+        OPLK_MEMCPY(pPdoDmaDesc_p, &pdoDmaFifo_l.aBuffer[readIndex], sizeof(desc));
+        pdoDmaFifo_l.readIndex++;
+
+        return TRUE;
+    }
+
+    return FALSE;
 }
 
 ///\}
