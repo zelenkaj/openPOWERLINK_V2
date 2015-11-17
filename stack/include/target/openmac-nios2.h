@@ -47,6 +47,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <omethlib.h>
 
 #include <sys/alt_cache.h>
+#include <sys/alt_irq.h>
 #include <io.h>
 #include <unistd.h>
 
@@ -57,6 +58,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //------------------------------------------------------------------------------
 // const defines
 //------------------------------------------------------------------------------
+#define OPENMAC_SYNC_IRQ    1
+#define OPENMAC_TXRX_IRQ    0
+#define OPENMAC_IRQ_IC_ID   0
+
+#define OPENMAC_IRQ_INTERRUPTIBLE(irq)                      alt_irq_enable_all((alt_irq_context)(1 << irq))
+#define OPENMAC_IRQ_NON_INTERRUPTIBLE(irq)                  alt_irq_disable_all()
 
 #define OPENMAC_MEMUNCACHED(pMem_p, size_p)                 (UINT8*)alt_remap_uncached(pMem_p, size_p)
 #define OPENMAC_FLUSHDATACACHE(pMem_p, size_p)

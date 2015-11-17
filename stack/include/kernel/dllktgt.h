@@ -67,6 +67,22 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define TGT_DLLK_LEAVE_CRITICAL_SECTION() \
         spin_unlock_irqrestore(&tgtDllkCriticalSection_l, tgtDllkFlags);
 
+#elif (TARGET_SYSTEM == _NO_OS_) && (DEV_SYSTEM == _DEV_NIOS2_)
+
+#include <sys/alt_irq.h>
+
+#define TGT_DLLK_DEFINE_CRITICAL_SECTION
+#define TGT_DLLK_DECLARE_CRITICAL_SECTION
+#define TGT_DLLK_DECLARE_FLAGS \
+        alt_irq_context tgtDllkContext;
+
+#define TGT_DLLK_ENTER_CRITICAL_SECTION() \
+        tgtDllkContext = alt_irq_disable_all();
+
+#define TGT_DLLK_LEAVE_CRITICAL_SECTION() \
+        alt_irq_enable_all(tgtDllkContext);
+
+
 #else   // all other targets do not need the critical section within DLL
 
 #define TGT_DLLK_DEFINE_CRITICAL_SECTION

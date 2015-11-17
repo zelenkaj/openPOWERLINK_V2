@@ -456,7 +456,13 @@ static tOplkError timerHdlCycleCb(tTimerEventArg* pEventArg_p)
     if (instance_l.pfnSyncCb != NULL)
     {
         BENCHMARK_MOD_01_SET(0);
+
+        OPENMAC_IRQ_INTERRUPTIBLE(OPENMAC_TXRX_IRQ);
+
         ret = instance_l.pfnSyncCb();
+
+        OPENMAC_IRQ_NON_INTERRUPTIBLE(OPENMAC_TXRX_IRQ);
+
         BENCHMARK_MOD_01_RESET(0);
     }
 

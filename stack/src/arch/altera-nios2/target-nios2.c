@@ -87,7 +87,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //------------------------------------------------------------------------------
 // local vars
 //------------------------------------------------------------------------------
-static BOOL fInterruptContextFlag_l;
+static BOOL interruptContextCount_l;
 
 //------------------------------------------------------------------------------
 // local function prototypes
@@ -169,7 +169,17 @@ the interrupt context is left.
 //------------------------------------------------------------------------------
 void target_setInterruptContextFlag(BOOL fEnable_p)
 {
-    fInterruptContextFlag_l = fEnable_p;
+    if (fEnable_p)
+    {
+        interruptContextCount_l++;
+    }
+    else
+    {
+        if (interruptContextCount_l > 0)
+        {
+            interruptContextCount_l--;
+        }
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -185,7 +195,7 @@ This function returns the interrupt context flag.
 //------------------------------------------------------------------------------
 BOOL target_getInterruptContextFlag(void)
 {
-    return fInterruptContextFlag_l;
+    return (interruptContextCount_l > 0);
 }
 
 //------------------------------------------------------------------------------
@@ -200,7 +210,7 @@ openPOWERLINK stack.
 //------------------------------------------------------------------------------
 tOplkError target_init(void)
 {
-    fInterruptContextFlag_l = FALSE;
+    interruptContextCount_l = 0;
     return kErrorOk;
 }
 
@@ -215,7 +225,7 @@ The function cleans up target specific stuff.
 //------------------------------------------------------------------------------
 tOplkError target_cleanup(void)
 {
-    fInterruptContextFlag_l = FALSE;
+    interruptContextCount_l = 0;
     return kErrorOk;
 }
 

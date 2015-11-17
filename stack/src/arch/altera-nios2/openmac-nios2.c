@@ -70,9 +70,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //------------------------------------------------------------------------------
 // const defines
 //------------------------------------------------------------------------------
-#define OPENMAC_SYNC_IRQ    0
-#define OPENMAC_TXRX_IRQ    1
-#define OPENMAC_IRQ_IC_ID   0
 
 //------------------------------------------------------------------------------
 // local types

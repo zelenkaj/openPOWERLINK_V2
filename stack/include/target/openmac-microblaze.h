@@ -53,6 +53,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // const defines
 //------------------------------------------------------------------------------
 
+#define OPENMAC_IRQ_INTERRUPTIBLE(irq)                      //Not supported
+#define OPENMAC_IRQ_NON_INTERRUPTIBLE(irq)                  //Not supported
+
 #define OPENMAC_MEMUNCACHED(pMem_p, size_p)                 pMem_p
 #define OPENMAC_FLUSHDATACACHE(pMem_p, size_p)              microblaze_flush_dcache_range((UINT32)pMem_p, size_p)
 #define OPENMAC_INVALIDATEDATACACHE(pMem_p, size_p)         microblaze_invalidate_dcache_range((UINT32)pMem_p, size_p)
