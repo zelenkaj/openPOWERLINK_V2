@@ -275,6 +275,64 @@ Exit:
     return ret;
 }
 
+//TODO
+tOplkError hrestimer_setTimer(tTimerHdl* pTimerHdl_p, tTimestamp time_p,
+                              tTimerkCallback pfnCallback_p, ULONG argument_p)
+{
+    tOplkError  ret = kErrorOk;
+    UINT        index;
+    tTimerInfo* pTimerInfo;
+
+    // check pointer to handle
+    if (pTimerHdl_p == NULL)
+    {
+        ret = kErrorTimerInvalidHandle;
+        goto Exit;
+    }
+
+    if (*pTimerHdl_p == 0)
+    {   // no timer created yet
+        index = 0;
+        if (instance_l.timerInfo.pfnCb != NULL)
+        {   // no free structure found
+            ret = kErrorTimerNoTimerCreated;
+            goto Exit;
+        }
+    }
+    else
+    {
+        index = (*pTimerHdl_p >> TIMERHDL_SHIFT) - 1;
+        if (index >= TIMER_COUNT)
+        {   // invalid handle
+            ret = kErrorTimerInvalidHandle;
+            goto Exit;
+        }
+    }
+
+    // modify slice timer
+    pTimerInfo = &instance_l.timerInfo;
+    OPENMAC_TIMERIRQDISABLE(HWTIMER_SYNC);
+
+    // increment timer handle (if timer expires right after this statement,
+    // the user would detect an unknown timer handle and discard it)
+    // => unused in this implementation, as the timer can always be stopped
+    pTimerInfo->eventArg.timerHdl.handle = ((pTimerInfo->eventArg.timerHdl.handle + 1) & TIMERHDL_MASK) |
+                                    ((index + 1) << TIMERHDL_SHIFT);
+
+    *pTimerHdl_p = pTimerInfo->eventArg.timerHdl.handle;
+
+    pTimerInfo->eventArg.argument.value = argument_p;
+    pTimerInfo->pfnCb = pfnCallback_p;
+
+    OPENMAC_TIMERSETCOMPAREVALUE(HWTIMER_SYNC, time_p.timeStamp);
+
+    // enable timer
+    OPENMAC_TIMERIRQENABLE(HWTIMER_SYNC);
+
+Exit:
+    return ret;
+}
+
 //------------------------------------------------------------------------------
 /**
 \brief    Delete a high-resolution timer
