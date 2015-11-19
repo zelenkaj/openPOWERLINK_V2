@@ -116,6 +116,8 @@ case ${APP_TYPE} in
         SEL_EPCS=${CFG_APP_EPCS}
         SEL_DEF_MEM_NAME=${CFG_APP_DEF_MEM_NAME}
         SEL_HOSTED_BOOT=${CFG_APP_HOSTED_BOOT}
+        SEL_INTERRUPT_STACK_MEM=${CFG_APP_INTERRUPT_STACK_MEM}
+        SEL_INTERRUPT_STACK_SIZE=${CFG_APP_INTERRUPT_STACK_SIZE}
         ;;
     drv)
         echo "INFO: Generate application for driver."
@@ -130,6 +132,8 @@ case ${APP_TYPE} in
         SEL_EPCS=${CFG_DRV_EPCS}
         SEL_DEF_MEM_NAME=${CFG_DRV_DEF_MEM_NAME}
         SEL_HOSTED_BOOT=${CFG_DRV_HOSTED_BOOT}
+        SEL_INTERRUPT_STACK_MEM=${CFG_DRV_INTERRUPT_STACK_MEM}
+        SEL_INTERRUPT_STACK_SIZE=${CFG_DRV_INTERRUPT_STACK_SIZE}
         ;;
     *)
         echo "ERROR: No APP_TYPE specified in ${APP_SETTINGS_FILE}!"
@@ -161,6 +165,22 @@ then
     BSP_GEN_ARGS+="--cmd add_section_mapping .tc_mem ${SEL_TC_MEM_NAME} \
                    --set hal.linker.enable_alt_load_copy_exceptions false "
     echo "INFO: tc_mem is used by the system!"
+fi
+
+if [ -z "${DEBUG}" ]; then
+    # Interrupt stack only handled in release...
+    if [ -n "${SEL_INTERRUPT_STACK_MEM}" ]; then
+        BSP_GEN_ARGS+="--set hal.linker.enable_interrupt_stack true \
+                       --set hal.linker.interrupt_stack_memory_region_name ${SEL_INTERRUPT_STACK_MEM} "
+        echo "INFO: Enable interrupt stack on memory ${SEL_INTERRUPT_STACK_MEM}!"
+
+        if [ -n "${SEL_INTERRUPT_STACK_SIZE}" ]; then
+            BSP_GEN_ARGS+="--set hal.linker.interrupt_stack_size ${SEL_INTERRUPT_STACK_SIZE} "
+            echo "INFO: Interrupt stack size is set to ${SEL_INTERRUPT_STACK_SIZE}!"
+        else
+            echo "INFO: Interrupt stack size is set to default value (1024)!"
+        fi
+    fi
 fi
 
 # Add flag for explicitly using EPCS flash.
