@@ -49,6 +49,7 @@ OPTION (CFG_COMPILE_LIB_MN_SIM                  "Compile openPOWERLINK MN librar
 OPTION (CFG_COMPILE_LIB_CN                      "Compile openPOWERLINK CN library" ON)
 OPTION (CFG_COMPILE_LIB_CNAPP_USERINTF          "Compile openPOWERLINK CN application library for userspace" ON)
 OPTION (CFG_COMPILE_LIB_CNAPP_KERNELINTF        "Compile openPOWERLINK CN application library for kernel interface" ON)
+OPTION (CFG_COMPILE_LIB_CNAPP_PCIEINTF          "Compile openPOWERLINK CN application library for PCIe interface" ON)
 OPTION (CFG_COMPILE_LIB_CNDRV_PCAP              "Compile openPOWERLINK CN driver library for linux userspace (pcap)" ON)
 OPTION (CFG_COMPILE_LIB_CN_SIM                  "Compile openPOWERLINK MN library with simulation interface" ON)
 
@@ -103,6 +104,10 @@ ENDIF()
 
 IF(CFG_COMPILE_LIB_CNAPP_KERNELINTF)
     ADD_SUBDIRECTORY(proj/linux/liboplkcnapp-kernelintf)
+ENDIF()
+
+IF(CFG_COMPILE_LIB_CNAPP_PCIEINTF)
+    ADD_SUBDIRECTORY(proj/linux/liboplkcnapp-kernelpcp)
 ENDIF()
 
 IF(CFG_COMPILE_LIB_CNDRV_PCAP)
