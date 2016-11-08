@@ -1130,6 +1130,8 @@ The function initializes the CN specific stuff of the local node.
 static tOplkError setupLocalNodeCn(void)
 {
     tOplkError      ret = kErrorOk;
+    UINT32          minSyncTime = dllkInstance_g.dllConfigParam.minSyncTime;
+    UINT32          cycleLen = dllkInstance_g.dllConfigParam.cycleLen;
 
 #if (CONFIG_DLL_PRES_FILTER_COUNT >= 0)
     UINT            handle;
@@ -1193,6 +1195,11 @@ static tOplkError setupLocalNodeCn(void)
     dllkInstance_g.fPrcEnabled = FALSE;
     dllkInstance_g.syncReqPrevNodeId = 0;
 #endif
+
+    if ((cycleLen == 0) || (minSyncTime == 0))
+        dllkInstance_g.syncEventCycle = 1;
+    else
+        dllkInstance_g.syncEventCycle = ((minSyncTime + cycleLen -1) / cycleLen);
 
     return ret;
 }

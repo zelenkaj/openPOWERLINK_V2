@@ -268,6 +268,7 @@ typedef struct
     BOOL                    fRedundancy;                            ///< Managing Node Redundancy is enabled
     tNmtEvent               nmtEventGoToStandby;                    ///< NMT command GoToStandby has been requested
 #endif
+    UINT32                  syncEventCycle;                         ///< Synchronization event cycle
 } tDllkInstance;
 
 //------------------------------------------------------------------------------

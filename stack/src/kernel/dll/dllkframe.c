@@ -155,6 +155,8 @@ static tOplkError cbCnTimer(const tTimerEventArg* pEventArg_p);
 static tOplkError enableRxFilter(UINT filterEntry_p, BOOL fEnable_p);
 #endif
 
+static void handleExtSync(tTimestamp* pNextSocTime_p);
+
 //============================================================================//
 //            P U B L I C   F U N C T I O N S                                 //
 //============================================================================//
@@ -2159,6 +2161,8 @@ static tOplkError processReceivedSoc(const tEdrvRxBuffer* pRxBuffer_p,
     if (nmtState_p >= kNmtCsStopped)
     {   // SoC frames only in Stopped, PreOp2, ReadyToOp and Operational
 
+        handleExtSync(pRxBuffer_p->pRxTimeStamp);
+
 #if (CONFIG_DLL_PROCESS_SYNC == DLL_PROCESS_SYNC_ON_SOC)
         // trigger synchronous task
         ret = dllk_postEvent(kEventTypeSync);
@@ -3222,5 +3226,36 @@ static tOplkError enableRxFilter(UINT filterEntry_p, BOOL fEnable_p)
     return ret;
 }
 #endif
+
+//------------------------------------------------------------------------------
+/**
+\brief  Handle external synchronization
+
+This function handles the external synchronization interrupt.
+
+\param[in]      pCurSocTime_p       Next SoC send time
+
+*/
+//------------------------------------------------------------------------------
+static void handleExtSync(tTimestamp* pCurSocTime_p)
+{
+    static UINT32   extCycleCnt = 0;
+    tTimestamp      extSyncTime;
+
+    if (++extCycleCnt == dllkInstance_g.syncEventCycle)
+    {
+        // Forward next SoC time to timer module
+        extSyncTime.timeStamp = pCurSocTime_p->timeStamp +
+                                (dllkInstance_g.dllConfigParam.cycleLen * 50);
+
+        hrestimer_setExtSyncIrqTime(extSyncTime);
+
+        extCycleCnt = 0;
+    }
+    else if (extCycleCnt > dllkInstance_g.syncEventCycle)
+    {
+        extCycleCnt = 0;
+    }
+}
 
 /// \}
