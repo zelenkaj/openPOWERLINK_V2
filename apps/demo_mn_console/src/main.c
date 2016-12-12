@@ -115,6 +115,9 @@ typedef struct
 static const UINT8  aMacAddr_l[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 static BOOL         fGsOff_l;
 
+static tSdoComConHdl fwSdo_l;
+static UINT8*        pFwBuffer_l = NULL;
+
 //------------------------------------------------------------------------------
 // local function prototypes
 //------------------------------------------------------------------------------
@@ -127,6 +130,9 @@ static tOplkError   initPowerlink(UINT32 cycleLen_p,
                                   const UINT8* macAddr_p);
 static void         loopMain(void);
 static void         shutdownPowerlink(void);
+static tOplkError   processEventsMain(tOplkApiEventType eventType_p,
+                                      const tOplkApiEventArg* pEventArg_p,
+                                      void* pUserArg_p);
 
 //============================================================================//
 //            P U B L I C   F U N C T I O N S                                 //
@@ -197,6 +203,9 @@ int main(int argc, char* argv[])
     loopMain();
 
 Exit:
+    free(pFwBuffer_l);
+    pFwBuffer_l = NULL;
+
     shutdownApp();
     shutdownPowerlink();
     system_exit();
@@ -292,7 +301,7 @@ static tOplkError initPowerlink(UINT32 cycleLen_p,
     initParam.fSyncOnPrcNode          = FALSE;
 
     // set callback functions
-    initParam.pfnCbEvent = processEvents;
+    initParam.pfnCbEvent = processEventsMain;
 
 #if defined(CONFIG_KERNELSTACK_DIRECTLINK)
     initParam.pfnCbSync  = processSync;
@@ -430,6 +439,60 @@ static void loopMain(void)
 
                 case 0x1B:
                     fExit = TRUE;
+                    break;
+
+                case 'u':
+                    {
+                        const char* pFileName = "/tmp/7966_4.fw";
+                        FILE* pFirmware;
+                        long int firmwareSize;
+
+                        if (pFwBuffer_l == NULL)
+                        {
+                            pFirmware = fopen(pFileName, "rb");
+                            if (pFirmware != NULL)
+                            {
+                                // Get Firmware file size
+                                fseek(pFirmware, 0, SEEK_END);
+                                firmwareSize = ftell(pFirmware);
+
+                                // Set back to file start
+                                fseek(pFirmware, 0, SEEK_SET);
+
+                                pFwBuffer_l = malloc(firmwareSize);
+                                if (pFwBuffer_l != NULL)
+                                {
+
+                                    UINT fwNodeId = 1;
+                                    UINT fwIndex = 0x1F50;
+                                    UINT fwSubIndex = 1;
+                                    size_t readBytes = fread(pFwBuffer_l, firmwareSize, 1, pFirmware);
+
+                                    if (readBytes == 1)
+                                    {
+                                        printf("SDO write to node %d object 0x%04X/%02X\n", fwNodeId, fwIndex, fwSubIndex);
+
+                                        ret = oplk_writeObject(&fwSdo_l,
+                                                               fwNodeId,
+                                                               fwIndex,
+                                                               fwSubIndex,
+                                                               pFwBuffer_l,
+                                                               firmwareSize,
+                                                               kSdoTypeAsnd,
+                                                               NULL);
+
+                                        printf(" -> %s\n", ((ret == kErrorOk) || (ret == kErrorReject)) ? "OK" : "ERROR");
+                                    }
+                                }
+
+                                fclose(pFirmware);
+                            }
+                            else
+                            {
+                                printf("Failed to open firmware file %s!\n", pFileName);
+                            }
+                        }
+                    }
                     break;
 
                 default:
@@ -589,6 +652,31 @@ static int getOptions(int argc_p,
     }
 
     return 0;
+}
+
+static tOplkError processEventsMain(tOplkApiEventType eventType_p,
+                                    const tOplkApiEventArg* pEventArg_p,
+                                    void* pUserArg_p)
+{
+    tOplkError  ret = kErrorOk;
+
+    switch (eventType_p)
+    {
+        case kOplkApiEventSdo:
+            printf("Sdo transfer finished to node %d.\n", pEventArg_p->sdoInfo.nodeId);
+            printf(" -> Transferred %d byte\n", pEventArg_p->sdoInfo.transferredBytes);
+            printf(" -> Abort code: 0x%08X\n", pEventArg_p->sdoInfo.abortCode);
+
+            free(pFwBuffer_l);
+            pFwBuffer_l = NULL;
+            break;
+
+        default:
+            ret = processEvents(eventType_p, pEventArg_p, pUserArg_p);
+            break;
+    }
+
+    return ret;
 }
 
 /// \}
