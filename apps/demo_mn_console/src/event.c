@@ -316,6 +316,8 @@ The function processes node events.
 static tOplkError processNodeEvent(const tOplkApiEventNode* pNode_p,
                                    void* pUserArg_p)
 {
+    tOplkError ret = kErrorOk;
+
     UNUSED_PARAMETER(pUserArg_p);
 
     eventlog_printNodeEvent(pNode_p);
@@ -346,11 +348,18 @@ static tOplkError processNodeEvent(const tOplkApiEventNode* pNode_p,
         case kNmtNodeEventAmniReceived:
             break;
 
+        case kNmtNodeEventUpdateSw:
+            //TODO: Trigger FWM here to check node's firmware.
+            //      If node's firmware is wrong, return kErrorReject to stop boot process.
+            //      If node's firmware is ok, return kErrorOk to continue boot process.
+            ret = kErrorReject; //FIXME: For now to stop boot process.
+            break;
+
         default:
             break;
     }
 
-    return kErrorOk;
+    return ret;
 }
 
 //------------------------------------------------------------------------------

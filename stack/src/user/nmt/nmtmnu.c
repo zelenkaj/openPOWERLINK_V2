@@ -2712,7 +2712,20 @@ static INT processNodeEventBoot(UINT nodeId_p,
     // $$$ check identification (vendor ID, product code, revision no, serial no)
     if (pNodeInfo->nodeState == kNmtMnuNodeStateIdentified)
     {
-        // $$$ check software
+        *pRet_p = nmtMnuInstance_g.pfnCbNodeEvent(nodeId_p,
+                                                  kNmtNodeEventUpdateSw,
+                                                  nodeNmtState_p,
+                                                  E_NO_ERROR,
+                                                  (pNodeInfo->nodeCfg & NMT_NODEASSIGN_MANDATORY_CN) != 0);
+        if (*pRet_p == kErrorReject)
+        {   // interrupt boot process on user request
+            NMTMNU_DBG_POST_TRACE_VALUE(kNmtMnuIntNodeEventBoot,
+                                        nodeId_p,
+                                        ((pNodeInfo->nodeState << 8) | *pRet_p));
+            *pRet_p = kErrorOk;
+            return 0;
+        }
+
         // check/start configuration
         // inform application
         *pRet_p = nmtMnuInstance_g.pfnCbNodeEvent(nodeId_p,
