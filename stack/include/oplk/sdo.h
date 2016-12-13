@@ -49,7 +49,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // size for complete SDO send frame (without CRC)
 // valid range: [C_DLL_MIN_ASYNC_MTU .. C_DLL_MAX_ASYNC_MTU] + Eth. header
-#define SDO_MAX_TX_FRAME_SIZE           314
+#define SDO_MAX_TX_FRAME_SIZE           1514
 
 
 //------------------------------------------------------------------------------
