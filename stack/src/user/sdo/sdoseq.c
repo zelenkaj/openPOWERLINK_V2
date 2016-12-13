@@ -264,7 +264,8 @@ static tOplkError deleteAckedFrameFromHistory(tSdoSeqCon* pSdoSeqCon_p,
 static tOplkError readFromHistory(tSdoSeqCon* pSdoSeqCon_p,
                                   tPlkFrame** ppFrame_p,
                                   UINT* pSize_p,
-                                  BOOL fInitRead_p);
+                                  BOOL fInitRead_p,
+                                  BOOL** ppfTxFail_p);
 static UINT       getFreeHistoryEntries(const tSdoSeqCon* pSdoSeqCon_p);
 static tOplkError setTimer(tSdoSeqCon* pSdoSeqCon_p, ULONG timeout_p);
 static void       processFinalTimeout(tSdoSeqCon* pSdoSeqCon_p,
@@ -1754,6 +1755,7 @@ static tOplkError sendFrame(tSdoSeqCon* pSdoSeqCon_p,
     tPlkFrame*  pFrameResend;
     UINT        frameSizeResend;
     UINT        freeEntries = 0;
+    BOOL*       pfTxFail;
 
     if (pData_p == NULL)
     {   // set pointer to own frame
@@ -1788,12 +1790,13 @@ static tOplkError sendFrame(tSdoSeqCon* pSdoSeqCon_p,
 
         // send unsent frames from history first to prevent retransmission request
         // caused by newer frames "overtaking" unsent frames internally
-        ret = readFromHistory(pSdoSeqCon_p, &pFrameResend, &frameSizeResend, TRUE);
+        ret = readFromHistory(pSdoSeqCon_p, &pFrameResend, &frameSizeResend, TRUE, &pfTxFail);
         while ((pFrameResend != NULL) && (frameSizeResend != 0))
         {
             if (ret == kErrorRetry)
             { // resend unsent frame
                 ret = sendToLowerLayer(pSdoSeqCon_p, frameSizeResend, pFrameResend);
+                *pfTxFail = (ret != kErrorOk);
                 if (ret == kErrorDllAsyncTxBufferFull)
                 {
                     ret = kErrorOk; // ignore unsent frames
@@ -1803,7 +1806,7 @@ static tOplkError sendFrame(tSdoSeqCon* pSdoSeqCon_p,
                     goto Exit;
             }
             // read next frame
-            ret = readFromHistory(pSdoSeqCon_p, &pFrameResend, &frameSizeResend, FALSE);
+            ret = readFromHistory(pSdoSeqCon_p, &pFrameResend, &frameSizeResend, FALSE, &pfTxFail);
         }
     }
     else
@@ -2034,8 +2037,9 @@ static tOplkError sendAllTxHistory(tSdoSeqCon* pSdoSeqCon_p)
     tOplkError  ret = kErrorOk;
     UINT        frameSize;
     tPlkFrame*  pFrame;
+    BOOL*       pfTxFail;
 
-    ret = readFromHistory(pSdoSeqCon_p, &pFrame, &frameSize, TRUE);
+    ret = readFromHistory(pSdoSeqCon_p, &pFrame, &frameSize, TRUE, &pfTxFail);
     if (ret == kErrorRetry)
         ret = kErrorOk; // ignore unsent frames info
 
@@ -2045,6 +2049,7 @@ static tOplkError sendAllTxHistory(tSdoSeqCon* pSdoSeqCon_p)
     while ((pFrame != NULL) && (frameSize != 0))
     {
         ret = sendToLowerLayer(pSdoSeqCon_p, frameSize, pFrame);
+        *pfTxFail = (ret != kErrorOk);
         if (ret == kErrorDllAsyncTxBufferFull)
         {
             ret = kErrorOk; // ignore unsent frames but stop sending since
@@ -2053,7 +2058,7 @@ static tOplkError sendAllTxHistory(tSdoSeqCon* pSdoSeqCon_p)
         if (ret != kErrorOk)
             return ret;
 
-        ret = readFromHistory(pSdoSeqCon_p, &pFrame, &frameSize, FALSE);
+        ret = readFromHistory(pSdoSeqCon_p, &pFrame, &frameSize, FALSE, &pfTxFail);
         if (ret == kErrorRetry)
             ret = kErrorOk; // ignore unsent frames info
 
@@ -2143,7 +2148,8 @@ The function reads a frame from the history buffer.
 static tOplkError readFromHistory(tSdoSeqCon* pSdoSeqCon_p,
                                   tPlkFrame** ppFrame_p,
                                   UINT* pSize_p,
-                                  BOOL fInitRead_p)
+                                  BOOL fInitRead_p,
+                                  BOOL** ppfTxFail_p)
 {
     tOplkError          ret = kErrorOk;
     tSdoSeqConHistory*  pHistory;
@@ -2183,6 +2189,7 @@ static tOplkError readFromHistory(tSdoSeqCon* pSdoSeqCon_p,
 
         // return pointer to stored frame
         *ppFrame_p = (tPlkFrame*)pHistory->aHistoryFrame[pHistory->readIndex];
+        *ppfTxFail_p = &pHistory->afFrameFirstTxFailed[pHistory->readIndex];
         *pSize_p = pHistory->aFrameSize[pHistory->readIndex];   // save size
         pHistory->readIndex++;
         if (pHistory->readIndex == SDO_HISTORY_SIZE)
@@ -2303,6 +2310,7 @@ static tOplkError processSubTimeout(tSdoSeqCon* pSdoSeqCon_p)
     UINT        frameSize;
     tPlkFrame*  pFrame;
     UINT8       recvSeqNumCon;
+    BOOL*       pfTxFail;
 
     DEBUG_LVL_SDO_TRACE("SDO temporary timeout!\n");
 
@@ -2325,7 +2333,7 @@ static tOplkError processSubTimeout(tSdoSeqCon* pSdoSeqCon_p)
         return ret;
 
     // read first frame from history
-    ret = readFromHistory(pSdoSeqCon_p, &pFrame, &frameSize, TRUE);
+    ret = readFromHistory(pSdoSeqCon_p, &pFrame, &frameSize, TRUE, &pfTxFail);
     if (ret == kErrorRetry)
         ret = kErrorOk; // ignore unsent frames info
     if (ret != kErrorOk)
@@ -2351,6 +2359,7 @@ static tOplkError processSubTimeout(tSdoSeqCon* pSdoSeqCon_p)
         }
 
         ret = sendToLowerLayer(pSdoSeqCon_p, frameSize, pFrame);
+        *pfTxFail = (ret != kErrorOk);
         if (ret == kErrorDllAsyncTxBufferFull)
             ret = kErrorOk; // ignore unsent frames
         if (ret != kErrorOk)
@@ -2493,6 +2502,7 @@ static tOplkError sendHistoryOldestSegm(tSdoSeqCon* pSdoSeqCon_p,
     tOplkError  ret = kErrorOk;
     UINT        frameSize;
     tPlkFrame*  pFrame;
+    BOOL*       pfTxFail;
 
     // transmission on server for last segments
     if (((recvSeqNumber_p & SEQ_NUM_MASK) != (pSdoSeqCon_p->recvSeqNum & SEQ_NUM_MASK)) &&
@@ -2502,7 +2512,7 @@ static tOplkError sendHistoryOldestSegm(tSdoSeqCon* pSdoSeqCon_p,
         // don't get a trigger otherwise, except a timeout.
 
         // send oldest history frame
-        ret = readFromHistory(pSdoSeqCon_p, &pFrame, &frameSize, TRUE);
+        ret = readFromHistory(pSdoSeqCon_p, &pFrame, &frameSize, TRUE, &pfTxFail);
         if (ret == kErrorRetry)
             ret = kErrorOk; // ignore unsent frames info
         if (ret != kErrorOk)
@@ -2511,6 +2521,7 @@ static tOplkError sendHistoryOldestSegm(tSdoSeqCon* pSdoSeqCon_p,
         if ((pFrame != NULL) && (frameSize != 0))
         {
             ret = sendToLowerLayer(pSdoSeqCon_p, frameSize, pFrame);
+            *pfTxFail = (ret != kErrorOk);
             if (ret == kErrorDllAsyncTxBufferFull)
                 ret = kErrorOk; // ignore unsent frame
 
