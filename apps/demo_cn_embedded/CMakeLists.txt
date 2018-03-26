@@ -38,8 +38,9 @@ MESSAGE(STATUS "Configuring ${PROJECT_NAME}")
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8.7)
 
 # Set CMake Policy to suppress the warning in CMake version 3.3.x
-IF (POLICY CMP0043)
+IF ((POLICY CMP0043) OR (POLICY CMP0053))
     CMAKE_POLICY(SET CMP0043 OLD)
+    CMAKE_POLICY(SET CMP0053 OLD)
 ENDIF()
 
 INCLUDE(../common/cmake/options.cmake)
@@ -51,6 +52,12 @@ SET(OBJDICT CiA401_CN)              # Set object dictionary to use
 FIND_OPLK_LIBRARY("cn")
 
 OPTION(CFG_IP_STACK "Is an IP stack available (support of SDO/UDP)" OFF)
+
+IF (CFG_FAT_SUPPORT)
+    SET(CFG_CDC_ON_SD ON CACHE BOOL "CDC on external SD card; to compile the cdc with application uncheck this option.")
+ELSE()
+    UNSET(CFG_CDC_ON_SD)
+ENDIF()
 
 # Set generic sources and include directories for this demo
 SET(DEMO_SOURCES
@@ -89,6 +96,8 @@ ENDIF(CFG_IP_STACK)
 
 IF(CMAKE_SYSTEM_NAME STREQUAL "Generic" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "Microblazeise")
     include(microblazeise.cmake)
+ELSEIF (CMAKE_SYSTEM_NAME STREQUAL "Generic" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "alterac5arm")
+    include(c5socarm.cmake)
 ELSE()
     MESSAGE(FATAL_ERROR "System ${CMAKE_SYSTEM_NAME} with processor ${CMAKE_SYSTEM_PROCESSOR} is not supported!")
 ENDIF()
@@ -98,9 +107,15 @@ SET(EXECUTABLE_NAME "${PROJECT_NAME}${ARCH_EXE_SUFFIX}")
 ################################################################################
 # Setup compile definitions depending on configuration
 
-IF(CFG_KERNEL_STACK_DIRECTLINK)
+IF(CFG_CDC_ON_SD)
+    ADD_DEFINITIONS(-DCONFIG_CDC_ON_SD=TRUE)
+ELSE()
+    ADD_DEFINITIONS(-DCONFIG_CDC_ON_SD=FALSE)
+ENDIF()
+
+IF (CFG_KERNEL_STACK_DIRECTLINK)
     ADD_DEFINITIONS(-DCONFIG_KERNELSTACK_DIRECTLINK)
-ENDIF(CFG_KERNEL_STACK_DIRECTLINK)
+ENDIF (CFG_KERNEL_STACK_DIRECTLINK)
 
 ################################################################################
 # Set the executable
@@ -119,9 +134,11 @@ TARGET_LINK_LIBRARIES(${EXECUTABLE_NAME} ${ARCH_LIBRARIES})
 
 ################################################################################
 # Post Build targets
-IF(CMAKE_SYSTEM_NAME STREQUAL "Generic" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "Microblazeise")
-    INCLUDE(microblazeapppostactionsise)
-ENDIF()
+IF (CMAKE_SYSTEM_NAME STREQUAL "Generic" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "Microblazeise")
+   INCLUDE(microblazeapppostactionsise)
+ELSEIF (CMAKE_SYSTEM_NAME STREQUAL "Generic" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "alterac5arm")
+   INCLUDE(c5socarmapppostactions)
+ENDIF ()
 
 ################################################################################
 # Add additional clean files
