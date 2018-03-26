@@ -42,7 +42,7 @@
 ADD_DEPENDENCIES(${EXECUTABLE_NAME} ${EXECUTABLE_NAME}-ARCH_PRE_BUILD_DEPS)
 ADD_CUSTOM_TARGET(${EXECUTABLE_NAME}-ARCH_PRE_BUILD_DEPS
             COMMAND chmod +x ${ARCH_TOOLS_PATH}/fix-app-makefile.sh
-            COMMAND ${ARCH_TOOLS_PATH}/fix-app-makefile.sh ${CMAKE_BINARY_DIR}/CMakeFiles/demo_mn_embedded.axf.dir/build.make
+            COMMAND ${ARCH_TOOLS_PATH}/fix-app-makefile.sh ${CMAKE_BINARY_DIR}/CMakeFiles/${PROJECT_NAME}.axf.dir/build.make
 )
 
 ##############################################################################
