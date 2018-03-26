@@ -177,7 +177,7 @@
  <parameter name="hdlLanguage" value="VERILOG" />
  <parameter name="hideFromIPCatalog" value="false" />
  <parameter name="maxAdditionalLatency" value="1" />
- <parameter name="projectName">mn-soc-shmem-gpio.qpf</parameter>
+ <parameter name="projectName">cn-soc-shmem-gpio.qpf</parameter>
  <parameter name="sopcBorderPoints" value="false" />
  <parameter name="systemHash" value="0" />
  <parameter name="testBenchDutName" value="" />
@@ -614,7 +614,7 @@
   <parameter name="inputClockFrequency" value="0" />
   <parameter name="resetSynchronousEdges" value="NONE" />
  </module>
- <module kind="mn_pcp" version="1.0" enabled="1" name="pcp_0">
+ <module kind="cn_pcp" version="1.0" enabled="1" name="pcp_0">
   <parameter name="AUTO_GENERATION_ID" value="0" />
   <parameter name="AUTO_UNIQUE_ID" value="$${FILENAME}_pcp_0" />
   <parameter name="AUTO_DEVICE_FAMILY" value="Cyclone V" />
@@ -641,7 +641,7 @@
   <parameter name="AUTO_CLK_CLOCK_RATE" value="50000000" />
   <parameter name="AUTO_DEVICE_FAMILY" value="Cyclone V" />
  </module>
- <module kind="mn_soc_host" version="1.0" enabled="1" name="host_0">
+ <module kind="cn_soc_host" version="1.0" enabled="1" name="host_0">
   <parameter name="AUTO_GENERATION_ID" value="0" />
   <parameter name="AUTO_UNIQUE_ID" value="$${FILENAME}_host_0" />
   <parameter name="AUTO_DEVICE_FAMILY" value="Cyclone V" />

@@ -170,7 +170,7 @@ architecture rtl of toplevel is
 
   signal miiTxClk               : std_logic_vector(1 downto 0);
 
-  component mnSocShmemGpio is
+  component cnSocShmemGpio is
         port (
             memory_mem_a                                        : out   std_logic_vector(14 downto 0);
             memory_mem_ba                                       : out   std_logic_vector(2 downto 0);
@@ -312,7 +312,7 @@ architecture rtl of toplevel is
             pcp_0_benchmark_pio_export                          : out   std_logic_vector(7 downto 0);
             powerlink_led_export                                : out   std_logic_vector(1 downto 0)
         );
-    end component mnSocShmemGpio;
+    end component cnSocShmemGpio;
 
     -- PLL
     component pll
@@ -331,7 +331,7 @@ architecture rtl of toplevel is
   -- Append 0 for MSB bits of DDR Memory
   fpga_memory_mem_a <= "00" & fpga_memory_mem_addr;
 
-    soc_inst: component mnSocShmemGpio
+    soc_inst: component cnSocShmemGpio
         port map (
             --HPS External Memory
             memory_mem_a                          =>  hps_memory_mem_a,

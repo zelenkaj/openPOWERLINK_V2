@@ -29,8 +29,8 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ################################################################################
 
-PROJECT = mn-soc-shmem-gpio
-QSYS_PROJECT = mnSocShmemGpio
+PROJECT = cn-soc-shmem-gpio
+QSYS_PROJECT = cnSocShmemGpio
 
 QSYS_OUT = $(QSYS_PROJECT)/synthesis/*.*
 QSYS_OUT += $(QSYS_PROJECT)/synthesis/submodules/*.*

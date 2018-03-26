@@ -28,4 +28,4 @@ DATE = "08:41:49  February 17, 2015"
 
 # Revisions
 
-PROJECT_REVISION = "mn-soc-shmem-gpio"
+PROJECT_REVISION = "cn-soc-shmem-gpio"

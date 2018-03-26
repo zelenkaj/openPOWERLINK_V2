@@ -2,6 +2,6 @@
 <library>
     <path path="../../../../ipcore/altera/components.ipx"/>
     <path path="../../common/ipcore/components.ipx"/>
-    <path path="../../../../ipcore/altera/qsys/mn_pcp.qsys"/>
-    <path path="../../../../ipcore/altera/qsys/mn_soc_host.qsys"/>
+    <path path="../../../../ipcore/altera/qsys/cn_pcp.qsys"/>
+    <path path="../../../../ipcore/altera/qsys/cn_soc_host.qsys"/>
 </library>

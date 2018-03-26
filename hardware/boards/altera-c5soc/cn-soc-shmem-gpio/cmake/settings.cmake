@@ -32,7 +32,7 @@
 # D E M O   I D E N T I F I C A T I O N
 
 # Name of the demo
-SET(CFG_DEMO_NAME "mn-soc-shmem-gpio")
+SET(CFG_DEMO_NAME "cn-soc-shmem-gpio")
 
 # Board of the demo
 SET(CFG_DEMO_BOARD_NAME "altera-c5soc")

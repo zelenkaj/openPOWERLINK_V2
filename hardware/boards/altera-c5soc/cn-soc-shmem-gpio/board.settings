@@ -65,7 +65,7 @@ CFG_OPENMAC=1
 # Dualprocshm interface used
 CFG_DUALPROCSHM=1
 # Type of POWERLINK node supported by this platform
-CFG_NODE=MN
+CFG_NODE=CN
 
 # JTAG Cable
 CFG_JTAG_CABLE="USB-BlasterII"
