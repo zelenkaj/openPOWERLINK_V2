@@ -58,9 +58,6 @@ The generic defines are valid for the whole openPOWERLINK stack.
 
 // These macros define all modules which are included
 #define CONFIG_INCLUDE_PDO
-#define CONFIG_INCLUDE_NMT_MN
-#define CONFIG_INCLUDE_SDOS
-#define CONFIG_INCLUDE_SDOC
 #define CONFIG_INCLUDE_LEDK
 #define CONFIG_INCLUDE_SDO_ASND
 #define CONFIG_INCLUDE_VETH
@@ -128,7 +125,7 @@ The Data Link Layer (DLL) defines determine the POWERLINK DLL module.
 The timer defines determine the high resolution timer module.
 */
 /**@{*/
-#define CONFIG_TIMER_USE_HIGHRES               TRUE
+#define CONFIG_TIMER_USE_HIGHRES               FALSE
     ///< use high resolution timer
 /**@}*/
 
