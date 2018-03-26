@@ -178,6 +178,10 @@ elif [ "${CPU_NAME}" == "${CFG_DRV_CPU_NAME}" ]; then
         echo "INFO: Compiling stack for Dual Processor Shared memory design"
         LIB_NAME=oplkmndrv-dualprocshm
         LIB_SOURCES=${HW_COMMON_PATH}/drivers/openmac/omethlib_phycfg.c
+    elif [ "${CFG_NODE}" == "CN" ] && [ -n "${CFG_OPENMAC}" ] && [ -n "${CFG_DUALPROCSHM}" ]; then
+        echo "INFO: Compiling stack for Dual Processor Shared memory design"
+        LIB_NAME=oplkcndrv-dualprocshm
+        LIB_SOURCES=${HW_COMMON_PATH}/drivers/openmac/omethlib_phycfg.c
     fi
 else
     echo "ERROR: Please specify CFG_XXX_CPU_NAME in board.settings!"
@@ -208,7 +212,7 @@ LIB_SOURCES+=" ${CFG_LIB_SOURCES}"
 LIB_INCLUDES+=" ${CFG_LIB_INCLUDES} ${BOARD_INCLUDE_PATH}"
 
 # Add design specific source files to the stack library
-if [ "${CFG_NODE}" == "MN" ] && [ -n "${CFG_DUALPROCSHM}" ]; then
+if [ -n "${CFG_DUALPROCSHM}" ]; then
     if [ -z "${CFG_DRV_BUS}" ]; then
         # For internal bus usage between two processors using dualprocshm interface
         LIB_SOURCES+=" ${DUALPROCSHM_DRIVER_SOURCES}"
