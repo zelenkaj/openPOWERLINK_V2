@@ -309,7 +309,6 @@ architecture rtl of toplevel is
             host_0_hps_0_h2f_cold_reset_reset_n                 : out   std_logic;
             pcp_0_cpu_resetrequest_resetrequest                 : in    std_logic                     := 'X';
             pcp_0_cpu_resetrequest_resettaken                   : out   std_logic;
-            pcp_0_benchmark_pio_export                          : out   std_logic_vector(7 downto 0);
             powerlink_led_export                                : out   std_logic_vector(1 downto 0)
         );
     end component cnSocShmemGpio;
@@ -457,7 +456,6 @@ architecture rtl of toplevel is
             host_0_hps_0_h2f_cold_reset_reset_n   =>  h2f_cold_reset_n,
             pcp_0_cpu_resetrequest_resetrequest   => not(hps_fpga_reset_n and h2f_gp_out(0)),
             pcp_0_cpu_resetrequest_resettaken     => h2f_gp_in(0),
-            pcp_0_benchmark_pio_export            => open,
             powerlink_led_export                  => pcp_led
         );
 
