@@ -56,12 +56,10 @@ The generic defines are valid for the whole openPOWERLINK stack.
 
 // These macros define all modules which are included
 #define CONFIG_INCLUDE_PDO
-#define CONFIG_INCLUDE_NMT_MN
 #define CONFIG_INCLUDE_SDOS
 #define CONFIG_INCLUDE_SDOC
 #define CONFIG_INCLUDE_SDO_ASND
 #define CONFIG_INCLUDE_SDO_RW_MULTIPLE
-#define CONFIG_INCLUDE_CFM
 #define CONFIG_INCLUDE_VETH
 #define CONFIG_INCLUDE_IP
 

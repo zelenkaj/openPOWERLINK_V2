@@ -30,14 +30,13 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ################################################################################
 
-PROJECT(oplkmnapp-dualprocshm C)
+PROJECT(oplkcnapp-dualprocshm C)
 MESSAGE(STATUS "Configuring ${PROJECT_NAME}")
 
 ################################################################################
 
 SET(LIB_USER_SOURCES
      ${USER_SOURCES}
-     ${USER_MN_SOURCES}
      ${CTRL_UCAL_DUALPROCSHM_SOURCES}
      ${ERRHND_UCAL_DUALPROCSHM_SOURCES}
      ${EVENT_UCAL_DUALPROCSHM_SOURCES}
@@ -69,7 +68,7 @@ INCLUDE_DIRECTORIES(
 SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -pedantic -std=c99")
 
 # set macro to change mapping to internal memory
-ADD_DEFINITIONS(-DCONFIG_MN -DCONFIG_PCP=FALSE)
+ADD_DEFINITIONS(-DCONFIG_PCP=FALSE)
 
 ################################################################################
 # Handle target specific functions

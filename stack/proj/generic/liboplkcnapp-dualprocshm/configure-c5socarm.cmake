@@ -33,7 +33,7 @@
 INCLUDE(setalteraarmboardconfig)
 
 # TODO Only source the options set during hardware build
-SET_BOARD_CONFIGURATION(${CFG_COMPILE_LIB_MN_HW_LIB_DIR})
+SET_BOARD_CONFIGURATION(${CFG_COMPILE_LIB_CN_HW_LIB_DIR})
 
 ################################################################################
 # Set paths
@@ -41,7 +41,7 @@ SET(ARCH_INSTALL_POSTFIX ${CFG_DEMO_BOARD_NAME}/${CFG_DEMO_NAME})
 
 ################################################################################
 # Find boards support package
-SET(ALT_BSP_DIR ${CFG_COMPILE_LIB_MN_HW_LIB_DIR}/bsp${CFG_HOST_NAME}/${CFG_HOST_NAME})
+SET(ALT_BSP_DIR ${CFG_COMPILE_LIB_CN_HW_LIB_DIR}/bsp${CFG_HOST_NAME}/${CFG_HOST_NAME})
 
 MESSAGE(STATUS "Searching for the board support package in ${ALT_BSP_DIR}")
 IF(EXISTS ${ALT_BSP_DIR})
@@ -70,7 +70,7 @@ INCLUDE_DIRECTORIES(
                     ${ARCH_SOURCE_DIR}/altera-c5socarm
                     ${CONTRIB_SOURCE_DIR}/socketwrapper
                     ${CONTRIB_SOURCE_DIR}/dualprocshm/include
-                    ${CFG_COMPILE_LIB_MN_HW_LIB_DIR}/include
+                    ${CFG_COMPILE_LIB_CN_HW_LIB_DIR}/include
                    )
 
 ################################################################################

@@ -44,8 +44,9 @@ SET(ALT_HW_LIB_DIR ${OPLK_BASE_DIR}/hardware/lib/${SYSTEM_NAME_DIR}/${SYSTEM_PRO
 SET(ALT_TOOLS_DIR ${TOOLS_DIR}/altera-arm)
 
 ################################################################################
-# Options for MN libraries
+# Options for MN/CN libraries
 OPTION(CFG_COMPILE_LIB_MNAPP_DUALPROCSHM "Compile openPOWERLINK MN library for application using dual processor shared memory" OFF)
+OPTION(CFG_COMPILE_LIB_CNAPP_DUALPROCSHM "Compile openPOWERLINK CN library for application using dual processor shared memory" OFF)
 
 ################################################################################
 # Add library subdirectories and hardware library path
@@ -60,4 +61,16 @@ IF(CFG_COMPILE_LIB_MNAPP_DUALPROCSHM)
 
 ELSE()
     UNSET(CFG_COMPILE_LIB_MN_HW_LIB_DIR CACHE)
+ENDIF()
+
+# CN libraries
+IF(CFG_COMPILE_LIB_CNAPP_DUALPROCSHM)
+      # Path to the hardware library folder of your board example
+    SET(CFG_COMPILE_LIB_CN_HW_LIB_DIR ${ALT_HW_LIB_DIR}/altera-c5soc/cn-soc-shmem-gpio
+              CACHE PATH "Path to the hardware library folder for the dual processor CN library")
+
+    ADD_SUBDIRECTORY(proj/generic/liboplkcnapp-dualprocshm)
+
+ELSE()
+    UNSET(CFG_COMPILE_LIB_CN_HW_LIB_DIR CACHE)
 ENDIF()
